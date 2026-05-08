@@ -29,6 +29,12 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 | `vidhi-diagnose` | Bug investigation — hypothesize, isolate, confirm |
 | `vidhi-architecture` | Refactoring and structural improvement |
 
+### Verification (phase 4)
+
+| Skill | Purpose |
+|---|---|
+| `vidhi-release-review` | Multi-pass review at release or checkpoint moments — pack + parallel architecture/review subagents + synthesis |
+
 ## Usage with yojana
 
 vidhi provides the *methodology* (opinions about how to plan and execute). [yojana](../yojana/) provides the *grammar* (task schema, state machine, dependencies, context shapes).
