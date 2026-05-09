@@ -121,7 +121,7 @@ node <codex-plugin-root>/scripts/codex-companion.mjs review \
 
 The plugin root depends on installation — check `~/.claude/plugins/codex/` (installed via plugin marketplace) or the cloned location (e.g. `~/soft/codex-plugin-cc/plugins/codex/`). The skill should resolve this once at invocation and fail clearly if the plugin isn't available.
 
-Codex's `review` mode (not `adversarial-review`) is the right fit here — we're checking correctness against a spec, not challenging the design direction. Use `adversarial-review` only if the user explicitly asks for a design challenge.
+Use `adversarial-review` in order to pass a custom focus prompt.
 
 The script returns review text. Parse it into the standard finding schema where possible, and record the raw output as a yojana comment on the task:
 
