@@ -1,0 +1,195 @@
+---
+name: vidhi-review
+description: Review code changes for one or more yojana tasks. Pulls task context, assembles the diff, and either reviews inline or produces a self-contained brief for external models (codex, opencode, etc.). Use for bounded reviews of specific work — not whole-project audits (use vidhi-release-review for those).
+---
+
+# Task Review
+
+Review code changes scoped to one or more yojana tasks. Lighter than vidhi-release-review — no pack, no parallel subagents, no full code-intel sweep. The reviewer focuses on whether *this change* is correct, clean, and consistent with the task's acceptance criteria and the project's contracts.
+
+## When to use
+
+- After completing a task or set of related tasks, before moving on
+- When you want a second opinion from another model (codex, opencode, glm)
+- When reviewing someone else's work against a yojana task spec
+
+## When NOT to use
+
+- **Whole-project audit** — use vidhi-release-review. It builds a full pack with code-intel and runs parallel architecture + review passes.
+- **Architecture improvement** — use vidhi-architecture. This skill checks what's there, not what could be better.
+- **Bug investigation** — use vidhi-diagnose. Don't use review to find the bug; review checks whether the fix is right.
+
+## Entry
+
+Accepts one or more yojana task IDs: `vidhi-review chitta/32` or `vidhi-review chitta/32 chitta/33 chitta/34`.
+
+If no task IDs are given, ask the user. Don't guess from git state.
+
+## Process
+
+### 1. Gather task context
+
+For each task ID:
+
+```
+yojana_context task="<id>" shape="review"
+```
+
+This returns: description, acceptance criteria, decisions, implementation plan, git/doc context_refs, and neighbor summaries.
+
+Collect the set of acceptance criteria across all tasks — these are the spec the reviewer checks against.
+
+### 2. Determine the diff
+
+The diff is the central artifact. Resolve it in priority order:
+
+1. **Git context_refs on the task(s)** — if tasks have `git:commit` refs, use those SHAs to build the range. For multiple commits: `git diff <earliest-parent>..<latest>`.
+2. **User-specified range** — if the user provides a commit range or branch comparison (e.g. `main..feature`), use that.
+3. **Ask** — if neither is available, ask the user: "What's the diff? A commit range, a branch comparison, or should I use the working tree?"
+
+Capture the diff as text. For large diffs (>500 lines), note the size — the reviewer should still see all of it, but the orchestrator may want to flag that a release-review would be more appropriate.
+
+### 3. Assess impact
+
+Call `sutra_diff_impact` (requires analysis tier — call `sutra_tools enable: ["analysis"]` first if not already enabled) to get:
+
+- Changed files and symbols
+- Callers of changed symbols (blast radius)
+
+This tells the reviewer what *else* might break, beyond what the diff shows.
+
+If sutra is unavailable or the workspace isn't indexed, skip this step and note the gap. The review can proceed without it — impact analysis sharpens the review but isn't required.
+
+### 4. Gather project context
+
+Pull the minimum project context a cold reviewer needs:
+
+- `CONTEXT.md` — domain vocabulary (if it exists)
+- Relevant ADRs — any ADR referenced in the task or touching the same area as the diff
+- Key type signatures — for functions/types the diff modifies, include their doc comments and public interface
+
+Don't pull the entire project README or CLAUDE.md. The reviewer doesn't need project setup instructions — they need domain contracts and design decisions.
+
+### 5. Choose reviewer
+
+The `--reviewer` flag (or user intent) picks the dispatch path:
+
+- **`claude`** (default) — inline review in this session. Proceed to step 6.
+- **`codex`** — dispatch to Codex via its companion script. Proceed to step 7.
+- **`brief`** — produce a self-contained review directory for any model. Proceed to step 8.
+
+If the user mentions codex, opencode, gemini, or another model by name, that's the reviewer. If they say "get a second opinion" without specifying, ask.
+
+### 6. Inline review (claude)
+
+Review the diff against:
+
+- Acceptance criteria from the task(s)
+- Project invariants from CONTEXT.md and ADRs
+- Impact analysis (callers that might be affected but aren't in the diff)
+- General correctness: error handling at boundaries, state transitions, naming consistency
+
+Produce findings using the standard YAML schema (same as vidhi-release-review — see below). Write them directly in the conversation.
+
+For each finding, check: would this matter to the author, or is it noise? Five sharp findings beat fifteen nitpicks.
+
+After findings, write a **verdict**:
+
+- **approve** — changes are correct and clean. Ship it.
+- **approve with notes** — changes are correct, minor items to address at convenience.
+- **request changes** — issues that should be fixed before this work is considered done.
+
+Update the task(s) in yojana:
+
+```
+yojana_task action=comment id="<id>" text="Review: <verdict>. <1-line summary>" author="agent"
+```
+
+If the review surfaces new work, offer to file it as a follow-up task rather than expanding the scope of the reviewed task.
+
+### 7. Codex dispatch
+
+Call the codex companion script directly — don't load the codex plugin's slash command into context.
+
+Build focus text from the task context: acceptance criteria, key decisions, and any specific review concerns from the impact analysis. This enriches Codex's review with task-awareness it wouldn't otherwise have.
+
+```bash
+node <codex-plugin-root>/scripts/codex-companion.mjs review \
+  --base <base-ref> \
+  "<focus text with acceptance criteria and task context>"
+```
+
+The plugin root depends on installation — check `~/.claude/plugins/codex/` (installed via plugin marketplace) or the cloned location (e.g. `~/soft/codex-plugin-cc/plugins/codex/`). The skill should resolve this once at invocation and fail clearly if the plugin isn't available.
+
+Codex's `review` mode (not `adversarial-review`) is the right fit here — we're checking correctness against a spec, not challenging the design direction. Use `adversarial-review` only if the user explicitly asks for a design challenge.
+
+The script returns review text. Parse it into the standard finding schema where possible, and record the raw output as a yojana comment on the task:
+
+```
+yojana_task action=comment id="<id>" text="Codex review:\n<output>" author="codex"
+```
+
+### 8. Brief mode (any external model)
+
+Build a review brief at `/tmp/review-brief-<project>-<date>/`:
+
+```
+review-brief/
+  00-instructions.md    — reviewer-prompt.md from this skill directory
+  10-tasks.md           — combined task context (criteria, decisions, neighbors)
+  20-diff.patch         — the diff as a unified patch
+  30-impact.md          — sutra_diff_impact output, formatted
+  40-context/           — CONTEXT.md, relevant ADRs, key type signatures
+```
+
+The brief is self-contained. An external model reads `00-instructions.md` first, then reviews using the rest.
+
+Tell the user the brief location. They feed it to whatever model they want — opencode, gemini-cli, or a future tool. The skill doesn't need to know the invocation syntax for every model; that's the user's concern. The brief is the contract.
+
+When the external review comes back, reconcile findings with any inline review and update yojana.
+
+## Finding schema
+
+Same as vidhi-release-review for interchangeability:
+
+```yaml
+- id: <stable-slug>
+  severity: critical | high | medium | low
+  category: correctness | contract | design | slop | performance
+  title: <one line>
+  location: <file:line | file | "task-wide">
+  evidence: |
+    <what's there now — quote or paraphrase>
+  why: |
+    <why it matters>
+  recommendation: |
+    <one approach>
+  confidence: high | medium | low
+```
+
+Severity calibration:
+
+- **Critical** — breaks correctness, loses data, violates security. Must fix.
+- **High** — will cause problems or hurt the next person here. Should fix.
+- **Medium** — real issue, bounded blast radius. Fix soon.
+- **Low** — cleanup, naming. Batch into follow-up.
+
+## Multi-task reviews
+
+When reviewing multiple tasks together:
+
+- Combine acceptance criteria into one checklist, grouped by task
+- Use one unified diff covering all tasks' commits
+- Findings reference the specific task they relate to (in `location` or prose)
+- One verdict covers the whole set — if any task has issues, it's "request changes" for the group
+
+This is the right choice when tasks are tightly coupled (shared code paths, same module, sequential steps in a feature). For unrelated tasks, separate reviews are better — don't force unrelated changes into one review just because they happened at the same time.
+
+## What NOT to do
+
+- Don't build a full review pack. That's release-review territory.
+- Don't run architecture analysis (hotspots, dead code, file health). Stay focused on the diff.
+- Don't re-run build/test/lint — assume the implementer already did (check the task's verification notes). If you doubt it, ask, don't silently re-run.
+- Don't review code outside the diff unless impact analysis shows a caller that's now broken. The diff is the scope.
+- Don't expand task scope based on review findings. File follow-ups instead.
+- Don't auto-approve. Even if everything looks clean, say so explicitly with a verdict.

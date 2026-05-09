@@ -47,6 +47,8 @@ When all acceptance criteria are green:
 ```
 yojana_task action=update id="<task-id>" status="done"
 ```
+this needs to be updated because there should now be a new field where the git commits
+and other info can be put.
 
 If the task can't be completed (blocker found, scope unclear):
 ```

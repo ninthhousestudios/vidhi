@@ -62,18 +62,19 @@ Source tree stays in place; the pack references it. **Do not copy the source.**
 
 Don't dump raw sutra JSON to reviewers. Reviewer attention is the constraint.
 
+**Enable the analysis tier first:** Call `sutra_tools` with `enable: ["analysis"]` before any analysis-tier tools. Without this, `sutra_hotspots`, `sutra_file_health`, `sutra_dead`, and `sutra_cochange` will error.
+
 Sutra calls to make:
 - `sutra_health` — workspace freshness
 - `sutra_outline` on the crate root (e.g. `src/lib.rs`) — module table of contents
 - `sutra_hotspots` — top 10-15
 - `sutra_file_health` — top 10-15
 - `sutra_dead` — filtered (see caveats)
-- `sutra_cochange` on top 3 hotspots — once `sutra/12` lands
+- `sutra_cochange` on top 3 hotspots
 
-Caveats to bake into SUMMARY (until upstream sutra fixes land):
-- **Filter `sutra_dead` test functions and framework-registered consts** before listing. Until `sutra/13` lands, do this manually: drop anything inside `cfg(test) mod tests`, anything in `tests/*.rs`, and any `TOOL` consts that are MCP-framework-registered.
-- **Annotate foundational types** in `file_health`. Files like `error.rs`/`envelope.rs`/`lib.rs` score low because of high fan-in — that's correct, not a bug. Until `sutra/11` lands, add a "**expected, ignore**" note to those rows.
-- **Skip cochange entirely** until `sutra/12` lands.
+Caveats to bake into SUMMARY:
+- **Filter `sutra_dead` for test helpers and MCP-registered handlers.** `sutra/13` added auto-exclusion for `#[test]` functions and `#[cfg(test)]` modules, but helper functions inside test files (`tests/*.rs`) and inside `#[cfg(test)]` modules still appear. Filter those manually. MCP-framework-registered tool handlers (all `src/tools/*.rs` files showing as "unreachable") are also false positives — filter pack-side.
+- **`file_health mode=actionable`** (default) correctly filters foundational files since `sutra/11`. No manual annotation needed.
 
 Always include a "what files matter most" table — top 5 hotspots by score with a one-line interpretation. The reviewer focuses there first.
 
@@ -170,16 +171,14 @@ The pack and prompt are model-agnostic. To use codex / glm / etc:
 3. They produce a markdown output following the same finding schema.
 4. The synthesis step (currently a Claude task) reconciles N reviews instead of 2.
 
+**Subagent limitation:** Step 5 assumes the orchestrator can spawn parallel subagents (Claude Code's `Agent` tool). Codex, OpenCode, and other harnesses don't have this capability. Options: (a) run the two passes as separate tasks/sessions and synthesize afterward, (b) have the single agent do both passes sequentially, (c) keep Claude Code as orchestrator and hand the pack to codex/opencode for one of the review passes (e.g. codex does code review while Claude does architecture).
+
 Until the workflow is proven on more than one project, pack-build remains a Claude-orchestrated process driven by this skill rather than a script. If the same orchestration repeats across projects without significant per-project tweaking, port to a `bin/build-review-pack` binary in vidhi/.
 
 ## Known caveats (sutra dependencies)
 
-These caveats apply until the corresponding sutra fixes land:
-
-| Sutra issue | Affects | Workaround |
+| Sutra issue | Status | Residual workaround |
 |---|---|---|
-| `sutra/13` (test exemption) | `sutra_dead` | Manual filter in pack-build |
-| `sutra/11` (foundational penalty) | `sutra_file_health` | Manual annotation in SUMMARY |
-| `sutra/12` (cochange git bug) | `sutra_cochange` | Skip cochange section |
-
-When these land, the curation step in §3 simplifies — the SUMMARY can pass through more of the raw output without manual filtering.
+| `sutra/13` (test exemption) | Partial — `#[test]` fns excluded, but test helpers and `tests/*.rs` files still appear | Manual filter in pack-build for test helpers and MCP-registered handlers |
+| `sutra/11` (foundational penalty) | Fixed — `mode=actionable` filters these | None |
+| `sutra/12` (cochange git bug) | Fixed | None |
