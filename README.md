@@ -38,7 +38,7 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 
 ## Usage
 
-vidhi provides the *methodology* (opinions about how to plan and execute). [yojana](../yojana/) provides the *grammar* (task schema, state machine, dependencies, context shapes). [sutra](../sutra/) provides *code intelligence* (impact analysis, hotspots, dead code).
+vidhi provides the *methodology* (opinions about how to plan and execute). [yojana](https://github.com/ninthhousestudios/yojana/) provides the *grammar* (task schema, state machine, dependencies, context shapes). [sutra](https://github.com/ninthhousestudios/sutra/) provides *code intelligence* (impact analysis, hotspots, dead code).
 
 ### Planning a new feature
 
