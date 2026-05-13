@@ -49,16 +49,22 @@ The diff is the central artifact. Resolve it in priority order:
 
 Capture the diff as text. For large diffs (>500 lines), note the size — the reviewer should still see all of it, but the orchestrator may want to flag that a release-review would be more appropriate.
 
-### 3. Assess impact
+### 3. Structural review
 
-Call `sutra_diff_impact` (requires analysis tier — call `sutra_tools enable: ["analysis"]` first if not already enabled) to get:
+Call `sutra_review` (requires analysis tier — call `sutra_tools enable: ["analysis"]` first if not already enabled) to get a complete structural analysis in one call:
 
 - Changed files and symbols
-- Callers of changed symbols (blast radius)
+- Transitively affected symbols (blast radius)
+- Risk score (0.0–1.0) with per-signal breakdown (blast radius, complexity, churn, hotspot overlap, conventions)
+- Constraint violations (DD: dependency cycles, forbidden deps)
+- Convention violations (FCA: pattern breaks in changed code)
+- Recommended reads ranked by review priority
 
-This tells the reviewer what *else* might break, beyond what the diff shows.
+Use `diff="staged"` or `diff="unstaged"` if the task's commits aren't on a branch yet. Default is `diff="branch"` (against main merge-base).
 
-If sutra is unavailable or the workspace isn't indexed, skip this step and note the gap. The review can proceed without it — impact analysis sharpens the review but isn't required.
+This tells the reviewer: how risky is this change, what else might break, and where to focus. The recommended reads list is especially useful — it prioritizes convention violation sites over plain affected symbols.
+
+If sutra is unavailable or the workspace isn't indexed, skip this step and note the gap. The review can proceed without it — structural analysis sharpens the review but isn't required.
 
 ### 4. Gather project context
 
@@ -138,7 +144,7 @@ review-brief/
   00-instructions.md    — reviewer-prompt.md from this skill directory
   10-tasks.md           — combined task context (criteria, decisions, neighbors)
   20-diff.patch         — the diff as a unified patch
-  30-impact.md          — sutra_diff_impact output, formatted
+  30-review.md          — sutra_review output, formatted (risk score, impact, violations, recommended reads)
   40-context/           — CONTEXT.md, relevant ADRs, key type signatures
 ```
 

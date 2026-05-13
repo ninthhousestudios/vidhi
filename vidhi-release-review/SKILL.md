@@ -71,6 +71,7 @@ Sutra calls to make:
 - `sutra_file_health` — top 10-15
 - `sutra_dead` — filtered (see caveats)
 - `sutra_cochange` on top 3 hotspots
+- `sutra_review` — diff-specific structural analysis (risk score, changed/affected symbols, constraint and convention violations, recommended reads). Include this as a "Diff Analysis" subsection in the SUMMARY. This pre-focuses reviewers on the diff's structural impact so they spend tokens on judgment, not navigation.
 
 Caveats to bake into SUMMARY:
 - **Filter `sutra_dead` for test helpers and MCP-registered handlers.** `sutra/13` added auto-exclusion for `#[test]` functions and `#[cfg(test)]` modules, but helper functions inside test files (`tests/*.rs`) and inside `#[cfg(test)]` modules still appear. Filter those manually. MCP-framework-registered tool handlers (all `src/tools/*.rs` files showing as "unreachable") are also false positives — filter pack-side.
