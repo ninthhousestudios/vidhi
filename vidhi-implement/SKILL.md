@@ -19,7 +19,13 @@ yojana_context task="<task-id>" shape="working"
 
 This gives you: acceptance criteria, decisions, implementation plan, conversation history, and neighbor context (dependencies, related tasks).
 
-### 2. Select method
+### 2. Check for implementation plan
+
+If the context includes an `implementation_plan`, use it as your execution roadmap — it has the file map, step sequence, and code sketches from vidhi-plan. Follow the steps in order. Don't re-derive the approach.
+
+If there's no implementation plan, proceed with method selection below. The task may not have gone through vidhi-plan (and that's fine for smaller tasks).
+
+### 3. Select method
 
 Based on the task's category and tags:
 
@@ -30,18 +36,18 @@ Based on the task's category and tags:
 | tag `refactor` or `architecture` | vidhi-architecture |
 | unclear | Ask the user |
 
-### 3. Execute
+### 4. Execute
 
 Run the selected methodology skill. The task's acceptance criteria serve as the behavior spec — you don't need to re-confirm "which behaviors to test?" if the criteria are well-written.
 
-### 4. Report progress
+### 5. Report progress
 
 During execution:
 - Each meaningful milestone → `yojana_task action=comment id="<task-id>" text="<progress>" author="agent"`
 - Mark acceptance criteria done as they're satisfied → `yojana_task action=update id="<task-id>" acceptance_criteria=[...]`
 - Record design decisions discovered during implementation → update `decisions` field
 
-### 5. Complete
+### 6. Complete
 
 When all acceptance criteria are green:
 ```
