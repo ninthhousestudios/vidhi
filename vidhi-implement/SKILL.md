@@ -21,9 +21,11 @@ This gives you: acceptance criteria, decisions, implementation plan, conversatio
 
 ### 2. Check for implementation plan
 
-If the context includes an `implementation_plan`, use it as your execution roadmap — it has the file map, step sequence, and code sketches from vidhi-plan. Follow the steps in order. Don't re-derive the approach.
+If the context includes an `implementation_plan`, use it as your execution roadmap — it has the file map, step sequence, and code sketches from vidhi-plan. Follow the steps in order. Don't re-derive the approach. If some steps are already marked complete (from a prior session), pick up at the first incomplete step.
 
-If there's no implementation plan, proceed with method selection below. The task may not have gone through vidhi-plan (and that's fine for smaller tasks).
+If there's no implementation plan and the task has a `needs-plan` tag, stop and run vidhi-plan first. Don't wing a task that was flagged for planning.
+
+If there's no implementation plan and no `needs-plan` tag, proceed with method selection below. The task doesn't need a plan.
 
 ### 3. Select method
 

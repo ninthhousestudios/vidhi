@@ -4,7 +4,7 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 
 ## Skills
 
-### Grounding (phase 1)
+### Grounding
 
 | Skill | Purpose |
 |---|---|
@@ -12,24 +12,31 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 | `vidhi-domain` | Establish/refine CONTEXT.md and ADRs — domain vocabulary |
 | `vidhi-survey` | Big-picture assessment of current state |
 
-### Planning (phase 2)
+### Design
 
 | Skill | Purpose |
 |---|---|
-| `vidhi-prd` | Feature idea → PRD (user stories, modules, test strategy) |
-| `vidhi-decompose` | PRD → vertical slices, published to yojana |
-| `vidhi-triage` | Route each task: agent/human/needs-info/wontfix |
+| `vidhi-brainstorm` | Collaborative design exploration — structured dialogue to turn ideas into designs |
+| `vidhi-prd` | Synthesize conversation context into a PRD (user stories, modules, test strategy) |
 
-### Execution (phase 3)
+### Planning
 
 | Skill | Purpose |
 |---|---|
-| `vidhi-implement` | Yojana-aware dispatcher — pulls task, selects method, reports back |
+| `vidhi-decompose` | PRD → vertical slices, published to yojana with status and planning tags |
+| `vidhi-premortem` | Stress-test a decomposition before implementation — coverage, integration, timeline risks |
+| `vidhi-plan` | Per-task implementation planning — file map, step sequence, code sketches → yojana `implementation_plan` |
+
+### Execution
+
+| Skill | Purpose |
+|---|---|
+| `vidhi-implement` | Yojana-aware dispatcher — pulls task, follows plan if present, selects method, reports back |
 | `vidhi-tdd` | Red-green-refactor loop (standalone or called by vidhi-implement) |
 | `vidhi-diagnose` | Bug investigation — hypothesize, isolate, confirm |
 | `vidhi-architecture` | Refactoring and structural improvement |
 
-### Verification (phase 4)
+### Verification
 
 | Skill | Purpose |
 |---|---|
@@ -40,15 +47,37 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 
 vidhi provides the *methodology* (opinions about how to plan and execute). [yojana](https://github.com/ninthhousestudios/yojana/) provides the *grammar* (task schema, state machine, dependencies, context shapes). [sutra](https://github.com/ninthhousestudios/sutra/) provides *code intelligence* (impact analysis, hotspots, dead code).
 
-### Planning a new feature
+### Full pipeline: idea → shipped feature
 
 ```
-1. vidhi-init          → bootstrap context docs in your project
-2. vidhi-domain        → ground domain vocabulary (CONTEXT.md)
-3. vidhi-prd           → write the PRD from your feature idea
-4. vidhi-decompose     → break PRD into yojana tasks with dependencies
-5. vidhi-triage        → label each task for routing
+vidhi-brainstorm      → explore the design space, one question at a time
+  ↓
+vidhi-domain          → sharpen vocabulary, update CONTEXT.md (optional — skip if domain is clear)
+  ↓
+vidhi-prd             → capture the design as a PRD
+  ↓
+vidhi-decompose       → break PRD into yojana tasks with dependencies and planning tags
+  ↓
+vidhi-premortem       → stress-test the decomposition for gaps and risks
+  ↓
+[per wave of unblocked tasks]
+  vidhi-plan          → plan tasks tagged needs-plan (skip for simple tasks)
+  vidhi-implement     → execute with TDD/diagnose/architecture, report back
+  vidhi-review        → review completed tasks
 ```
+
+Not every project needs every step. Small features can skip brainstorm and go straight to PRD. Bug fixes can skip everything and go straight to `vidhi-diagnose`. Use judgment.
+
+### Planning in waves
+
+Don't plan all tasks upfront. Plan and implement in waves following the dependency graph:
+
+1. After decompose + premortem, plan the first batch of unblocked `needs-plan` tasks
+2. Implement them (simple tasks without `needs-plan` go straight to implement)
+3. Plan the next batch — now informed by what you learned implementing the first wave
+4. Repeat until done
+
+Plans also serve as session bookmarks. If a task spans sessions, the plan tracks which steps are complete so the next session picks up where you left off.
 
 ### Executing tasks
 

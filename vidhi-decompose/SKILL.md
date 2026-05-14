@@ -37,8 +37,11 @@ Present the proposed breakdown as a numbered list. For each slice, show:
 
 - **Title**: short descriptive name
 - **Type**: HITL / AFK
+- **Needs plan**: yes / no — whether the task warrants vidhi-plan before implementation
 - **Blocked by**: which other slices (if any) must complete first
 - **User stories covered**: which user stories this addresses (if the source material has them)
+
+**Needs plan** heuristic: tag `needs-plan` when the task touches multiple files, has integration points with other tasks, or requires non-obvious sequencing. Skip for single-file changes, config tweaks, or tasks where the acceptance criteria are the plan.
 
 Ask the user:
 
@@ -51,7 +54,17 @@ Iterate until the user approves the breakdown.
 
 ### 5. Publish the issues to the issue tracker
 
-For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. Apply the `needs-triage` triage label so each issue enters the normal triage flow.
+For each approved slice, publish a new issue to the issue tracker. Use the issue body template below.
+
+Set the status directly based on what the task needs:
+
+| Task is | Status |
+|---|---|
+| AFK and unblocked | `ready-for-agent` |
+| HITL (design decision, review, grilling) | `ready-for-human` |
+| Blocked by another task | `ready-for-agent` or `ready-for-human` (the dependency graph handles blocking) |
+
+Tag tasks with `needs-plan` when marked as such during the quiz step.
 
 Publish issues in dependency order (blockers first) so you can reference real issue identifiers in the "Blocked by" field.
 
