@@ -125,7 +125,8 @@ node <codex-plugin-root>/scripts/codex-companion.mjs review \
   "<focus text with acceptance criteria and task context>"
 ```
 
-The plugin root depends on installation — check `~/.claude/plugins/codex/` (installed via plugin marketplace) or the cloned location (e.g. `~/soft/codex-plugin-cc/plugins/codex/`). The skill should resolve this once at invocation and fail clearly if the plugin isn't available.
+Plugin is here:
+~/.claude/plugins/codex/scripts/codex-companion.mjs
 
 Use `adversarial-review` in order to pass a custom focus prompt.
 
