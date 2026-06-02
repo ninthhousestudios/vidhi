@@ -35,7 +35,7 @@ Based on the task's category and tags:
 |---|---|
 | `enhancement` | vidhi-tdd |
 | `bug` | vidhi-diagnose |
-| tag `refactor` or `architecture` | vidhi-architecture |
+| tag `refactor` or `architecture` | vidhi-deepen |
 | unclear | Ask the user |
 
 ### 4. Execute

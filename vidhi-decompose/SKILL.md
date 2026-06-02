@@ -52,7 +52,27 @@ Ask the user:
 
 Iterate until the user approves the breakdown.
 
-### 5. Publish the issues to the issue tracker
+### 5. Propose review checkpoints
+
+Group the approved slices into **review checkpoints** — points where work is reviewed before continuing. Each checkpoint is a set of slices that, when complete, leave the system in a coherent state where a reviewer won't flag "missing" things that are simply upcoming work.
+
+Good checkpoint boundaries:
+- After foundational/mechanical changes (renames, migrations, config) that everything else builds on
+- After a set of core features that are independently complete
+- After integration/cap slices that tie subsystems together
+
+Present the proposed checkpoints to the user and confirm. For each checkpoint, show which slices are included and why this is a stable review point.
+
+When publishing (step 6), create a **review task** for each checkpoint:
+- Type: HITL, status: `ready-for-human`
+- Title: "5x-review-N: review {checkpoint description}"
+- Depends on all slices in the checkpoint
+- Tag with `review`
+- Body describes what the reviewer should focus on at this stage
+
+Slices in subsequent checkpoints don't need to depend on the review task — the review is a quality gate the human manages, not a hard blocker in the dependency graph.
+
+### 6. Publish the issues to the issue tracker
 
 For each approved slice, publish a new issue to the issue tracker. Use the issue body template below.
 
