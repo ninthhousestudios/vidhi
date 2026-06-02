@@ -1,6 +1,6 @@
 ---
 name: vidhi-init
-description: Sets up an `## Agent skills` block in AGENTS.md/CLAUDE.md and `docs/agents/` so the vidhi skills know this repo's issue tracker (yojana, GitHub, GitLab, or local markdown), triage label vocabulary, and domain doc layout. Run before first use of `vidhi-decompose`, `vidhi-prd`, `vidhi-triage`, `vidhi-diagnose`, `vidhi-tdd`, `vidhi-architecture`, or `vidhi-survey` — or if those skills appear to be missing context about the issue tracker, triage labels, or domain docs.
+description: Sets up an `## Agent skills` block in AGENTS.md/CLAUDE.md and `docs/agents/` so the vidhi skills know this repo's issue tracker (yojana, GitHub, GitLab, or local markdown), triage label vocabulary, and domain doc layout. Run before first use of `vidhi-decompose`, `vidhi-prd`, `vidhi-triage`, `vidhi-diagnose`, `vidhi-tdd`, `vidhi-deepen`, or `vidhi-survey` — or if those skills appear to be missing context about the issue tracker, triage labels, or domain docs.
 disable-model-invocation: true
 ---
 
@@ -61,7 +61,7 @@ Default: each role's string equals its name. Ask the user if they want to overri
 
 **Section C — Domain docs.**
 
-> Explainer: Some skills (`vidhi-architecture`, `vidhi-diagnose`, `vidhi-tdd`) read a `CONTEXT.md` file to learn the project's domain language, and `docs/adr/` for past architectural decisions. They need to know whether the repo has one global context or multiple (e.g. a monorepo with separate frontend/backend contexts) so they look in the right place.
+> Explainer: Some skills (`vidhi-deepen`, `vidhi-diagnose`, `vidhi-tdd`) read a `CONTEXT.md` file to learn the project's domain language, and `docs/adr/` for past architectural decisions. They need to know whether the repo has one global context or multiple (e.g. a monorepo with separate frontend/backend contexts) so they look in the right place.
 
 Confirm the layout:
 

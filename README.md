@@ -34,7 +34,7 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 | `vidhi-implement` | Yojana-aware dispatcher — pulls task, follows plan if present, selects method, reports back |
 | `vidhi-tdd` | Red-green-refactor loop (standalone or called by vidhi-implement) |
 | `vidhi-diagnose` | Bug investigation — hypothesize, isolate, confirm |
-| `vidhi-architecture` | Refactoring and structural improvement |
+| `vidhi-deepen` | Refactoring and structural improvement |
 
 ### Verification
 
@@ -149,7 +149,7 @@ vidhi-release-review --scope wm-1..wm-12         → review a specific commit ra
 3. Curate code-intel SUMMARY (don't dump raw sutra JSON — reviewer attention is the constraint)
 4. Run verification (language-appropriate build/test/lint/fmt)
 5. Launch two parallel subagents:
-   - **Architecture pass** — vidhi-architecture skill, produces deepening candidates
+   - **Architecture pass** — vidhi-deepen skill, produces deepening candidates
    - **Code review pass** — reviewer-prompt.md, produces findings with YAML schema
 6. Synthesize both reviews into a single action plan with fix-order waves
 7. Triage findings to yojana (with user confirmation)
@@ -174,7 +174,7 @@ vidhi-release-review --scope wm-1..wm-12         → review a specific commit ra
 | About to tag a release | `vidhi-release-review` |
 | Mid-upgrade checkpoint | `vidhi-release-review` (checkpoint mode) |
 | Handing project to external reviewers | `vidhi-release-review` (pack is the handoff) |
-| Forward-looking refactor planning | `vidhi-architecture` (not a review skill) |
+| Forward-looking refactor planning | `vidhi-deepen` (not a review skill) |
 
 ## Finding schema
 

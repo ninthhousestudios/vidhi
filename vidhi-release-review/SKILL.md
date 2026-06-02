@@ -1,6 +1,6 @@
 ---
 name: vidhi-release-review
-description: Run a thorough, multi-pass code review of a project at a release or checkpoint moment. Use when the user wants to verify a project is ready to ship, audit a long upgrade arc, or get fresh-eyes review on accumulated changes. Different from vidhi-architecture (forward-looking refactor candidates) and per-task PR review (which uses yojana_context shape="review" directly).
+description: Run a thorough, multi-pass code review of a project at a release or checkpoint moment. Use when the user wants to verify a project is ready to ship, audit a long upgrade arc, or get fresh-eyes review on accumulated changes. Different from vidhi-deepen (forward-looking refactor candidates) and per-task PR review (which uses yojana_context shape="review" directly).
 ---
 
 # Release Review
@@ -16,7 +16,7 @@ A two-pass review for a project at a release or checkpoint moment. Designed so t
 ## When NOT to use
 
 - **Per-task PR review** — call `yojana_context shape="review"` for the task plus the diff. Different, lighter-weight workflow. The release review's pack is overkill for a single task.
-- **Forward-looking refactor planning** — use vidhi-architecture instead. (Release review *spawns* vidhi-architecture as one of its two passes — see step 5.)
+- **Forward-looking refactor planning** — use vidhi-deepen instead. (Release review *spawns* vidhi-deepen as one of its two passes — see step 5.)
 - **Cross-project consistency for the manas constellation** — wait for vidhi-constellation-review (TBD).
 
 ## Process
@@ -97,7 +97,7 @@ If infra is genuinely absent, mark `NOT_RUN` with a *specific* reason. "no live 
 
 Each gets the pack location, source root, and a tightly-scoped prompt. Run them as parallel `Agent` calls in a single message.
 
-**Subagent A — vidhi-architecture pass.** Prompt them to follow `vidhi-architecture/SKILL.md` against the project, but stop before the grilling loop (no user to grill). Output: `docs/reviews/<date>-<scope>-architecture.md`. They produce deepening candidates only — no slop, no correctness, no naming.
+**Subagent A — vidhi-deepen pass.** Prompt them to follow `vidhi-deepen/SKILL.md` against the project, but stop before the grilling loop (no user to grill). Output: `docs/reviews/<date>-<scope>-architecture.md`. They produce deepening candidates only — no slop, no correctness, no naming.
 
 **Subagent B — code review.** Prompt them with `reviewer-prompt.md` (in this skill directory) plus the pack location. Output: `docs/reviews/<date>-<scope>-review.md` with verdict, design section, YAML findings, synthesis, slop list.
 
@@ -157,7 +157,7 @@ For **checkpoint reviews** (mid-upgrade), substitute the verdict line:
 
 Three files in the project's `docs/reviews/`:
 
-- `<date>-<scope>-architecture.md` — architecture pass (vidhi-architecture skill)
+- `<date>-<scope>-architecture.md` — architecture pass (vidhi-deepen skill)
 - `<date>-<scope>-review.md` — code review pass
 - `<date>-<scope>.md` — synthesis (the entry point readers should open first)
 

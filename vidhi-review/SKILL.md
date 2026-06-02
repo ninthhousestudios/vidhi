@@ -16,7 +16,7 @@ Review code changes scoped to one or more yojana tasks. Lighter than vidhi-relea
 ## When NOT to use
 
 - **Whole-project audit** — use vidhi-release-review. It builds a full pack with code-intel and runs parallel architecture + review passes.
-- **Architecture improvement** — use vidhi-architecture. This skill checks what's there, not what could be better.
+- **Architecture improvement** — use vidhi-deepen. This skill checks what's there, not what could be better.
 - **Bug investigation** — use vidhi-diagnose. Don't use review to find the bug; review checks whether the fix is right.
 
 ## Entry
