@@ -70,7 +70,9 @@ When publishing (step 6), create a **review task** for each checkpoint:
 - Tag with `review`
 - Body describes what the reviewer should focus on at this stage
 
-Slices in subsequent checkpoints don't need to depend on the review task — the review is a quality gate the human manages, not a hard blocker in the dependency graph.
+**Ordering**: publish review tasks interleaved with implementation slices so the dependency graph reads in execution order. Concretely: publish checkpoint 1's slices, then checkpoint 1's review task, then checkpoint 2's slices, then checkpoint 2's review task, etc. This way the issue list reads top-to-bottom as the work will actually proceed.
+
+Slices in subsequent checkpoints depend on the preceding review task — the review is a quality gate that must pass before the next wave begins.
 
 ### 6. Publish the issues to the issue tracker
 
