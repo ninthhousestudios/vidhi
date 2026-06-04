@@ -44,8 +44,9 @@ Collect the set of acceptance criteria across all tasks — these are the spec t
 The diff is the central artifact. Resolve it in priority order:
 
 1. **Git context_refs on the task(s)** — if tasks have `git:commit` refs, use those SHAs to build the range. For multiple commits: `git diff <earliest-parent>..<latest>`.
-2. **User-specified range** — if the user provides a commit range or branch comparison (e.g. `main..feature`), use that.
-3. **Ask** — if neither is available, ask the user: "What's the diff? A commit range, a branch comparison, or should I use the working tree?"
+2. **Blocked-by task refs** — for review tasks, check the blocked-by tasks' git refs. If those also lack refs, search git log for commit messages containing the task IDs (e.g. `git log --oneline | grep -E 'sutra/(84|85|86)'`). Build the range from earliest-parent to latest.
+3. **User-specified range** — if the user provides a commit range or branch comparison (e.g. `main..feature`), use that.
+4. **Ask** — if none of the above yields a range, ask the user: "What's the diff? A commit range, a branch comparison, or should I use the working tree?"
 
 Capture the diff as text. For large diffs (>500 lines), note the size — the reviewer should still see all of it, but the orchestrator may want to flag that a release-review would be more appropriate.
 
@@ -120,15 +121,12 @@ Call the codex companion script directly — don't load the codex plugin's slash
 Build focus text from the task context: acceptance criteria, key decisions, and any specific review concerns from the impact analysis. This enriches Codex's review with task-awareness it wouldn't otherwise have.
 
 ```bash
-node <codex-plugin-root>/scripts/codex-companion.mjs review \
+node ~/.claude/plugins/codex/scripts/codex-companion.mjs adversarial-review \
   --base <base-ref> \
   "<focus text with acceptance criteria and task context>"
 ```
 
-Plugin is here:
-~/.claude/plugins/codex/scripts/codex-companion.mjs
-
-Use `adversarial-review` in order to pass a custom focus prompt.
+**Important:** The `review` subcommand does not accept custom focus text — use `adversarial-review` when passing task context. Always pass `--base` explicitly; omitting it diffs against main, which produces an empty diff if the reviewed commits are already on main.
 
 The script returns review text. Parse it into the standard finding schema where possible, and record the raw output as a yojana comment on the task:
 

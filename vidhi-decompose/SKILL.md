@@ -76,7 +76,7 @@ Slices in subsequent checkpoints depend on the preceding review task — the rev
 
 ### 6. Publish the issues to the issue tracker
 
-For each approved slice, publish a new issue to the issue tracker. Use the issue body template below.
+For each approved slice, publish a new issue to the issue tracker. Use the issue body template below. If the parent PRD belongs to a yojana arc, publish all slices and review tasks to the same arc with `arc_phase: implement`.
 
 Set the status directly based on what the task needs:
 
