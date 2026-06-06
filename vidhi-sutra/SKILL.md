@@ -47,11 +47,21 @@ sutra_deps(workspace="<name>")
 sutra_conventions(workspace="<name>", action="list")
 ```
 
-Also explore the repo for architecture docs:
+Also explore the repo for architecture docs and extract **stated architectural intent**:
 
 - Look for `docs/adr/` or similar ADR directories
 - Read `CONTEXT.md`, `CLAUDE.md`, `README.md` for stated architectural intent
 - Check for existing `.sutra/rules.toml` — if present, read it as a starting point
+- Look for migration docs, punchlists, or design docs in `docs/`, `claude/arch/`, etc.
+
+Extract concrete claims about intended structure. You're looking for statements like:
+
+- **Layer boundaries** — "GUI must not call SWE directly", "display code must not do ephemeris", "options → swe → core → calc"
+- **Forbidden dependencies** — "X should not import Y", "route through Z instead of calling W directly"
+- **Intended deprecations** — "X is deprecated, use Y instead", "will be deleted in Issue N"
+- **Isolation requirements** — "this module must stay pure", "these subsystems are independent"
+
+Record each claim with its source (file path + relevant quote). These become the **stated architecture** — the intended design that the actual graph may or may not reflect. Even stale docs are valuable here: if a README says "A must not import B" but the graph shows A → B, that's either debt to surface or doc drift to flag. Both are useful findings for the human to resolve in step 4.
 
 ### 3. Analyze and classify
 
@@ -70,15 +80,47 @@ Identify the dependency layers from the import graph. Common patterns:
 
 Show the user which files belong to which layer and the dependency direction. Flag any **upward dependencies** (lower layer importing higher layer).
 
-#### 3b. Cross-layer couplings
+#### 3b. Stated vs. actual architecture
 
-From the dependency graph, identify imports that cross layer boundaries in the wrong direction. Classify each:
+Compare the stated architectural intent (from step 2) against the actual import graph. For each stated claim, check whether the graph confirms or contradicts it.
+
+Present mismatches in a table:
+
+| Stated intent | Source | Actual graph | Classification |
+|---|---|---|---|
+| "display code must not do ephemeris" | `docs/migration.md` | `apps/core_gui_qt.py → swe` (12 edges) | Debt — propose advisory constraint |
+| "options → swe → core → calc" | `CLAUDE.md` | All edges respect this | Confirmed — propose blocking constraints |
+| "X is deprecated, use Y" | `README.md` | 4 files still import X | Debt — propose advisory constraint |
+
+Classify each mismatch:
+
+- **Confirmed** — graph matches stated intent → propose as blocking constraint with `provenance` pointing to the source doc
+- **Architectural debt** — graph violates stated intent, but the violation is widespread or has pragmatic reasons → propose as advisory constraint, note the gap
+- **Doc drift** — stated intent seems outdated (e.g., doc describes a module that no longer exists) → flag for the human but don't propose a constraint
+
+If no architecture docs exist, skip this sub-step and note the gap: "No stated architecture found — constraints below are derived purely from the import graph."
+
+#### 3c. Naming heuristic check
+
+As a fallback that runs regardless of whether architecture docs exist, apply naming heuristics to flag suspicious cross-layer edges:
+
+**Presentation-layer directories** (heuristic): `apps/`, `gui/`, `views/`, `widgets/`, `ui/`, `pages/`, `screens/`, `handlers/`, `routes/`
+
+**Infrastructure-layer modules** (heuristic): names containing `swe`, `db`, `sql`, `ffi`, `binding`, `raw`, `wire`, `proto`
+
+Flag any edge where a presentation-layer file imports an infrastructure-layer module directly — these are candidates for "should this go through an intermediary?" Present them to the user as questions, not assertions. False positives are fine here; the human resolves them in step 4.
+
+This check is supplementary. It catches obvious layer violations even when docs don't exist or don't mention them. It does NOT replace the stated-vs-actual comparison — naming is a weak signal; docs are strong signal.
+
+#### 3d. Cross-layer couplings
+
+From the dependency graph (and informed by 3b/3c), identify imports that cross layer boundaries in the wrong direction. Classify each:
 
 - **Architectural debt** — exists for pragmatic reasons, should be advisory constraints to document and create pressure
 - **Clean violations** — clearly wrong, should be blocking constraints
 - **Legitimate** — the layers don't apply here (e.g., pipeline/orchestrator importing everything is expected)
 
-#### 3c. Isolation boundaries
+#### 3e. Isolation boundaries
 
 Look for modules that must stay lightweight or pure. Common patterns:
 
@@ -87,7 +129,7 @@ Look for modules that must stay lightweight or pure. Common patterns:
 - **Shared libraries/crates** — reusable code that shouldn't depend on application-specific modules
 - **Plugin/adapter interfaces** — should depend on traits, not implementations
 
-#### 3d. Hub modules
+#### 3f. Hub modules
 
 From `sutra_map`, identify files with high fan-in that aren't infrastructure. These are candidates for `max_fan_in` constraints — not to prevent legitimate use but to detect when a module is accumulating too many responsibilities.
 
@@ -96,7 +138,7 @@ Reasonable thresholds:
 - Domain modules: 10–20 depending on codebase size
 - Avoid setting limits so tight they trigger on current state — set them ~30% above current fan-in as guardrails
 
-#### 3e. Cycle candidates
+#### 3g. Cycle candidates
 
 Identify directory subtrees where cycles would be architecturally harmful. Good candidates for `no_cycles`:
 
@@ -106,7 +148,7 @@ Identify directory subtrees where cycles would be architecturally harmful. Good 
 
 Don't add `no_cycles` to the entire `src/` — it's too broad and legitimate reference cycles exist in Rust (e.g., `mod.rs` re-exporting from submodules).
 
-#### 3f. Convention triage
+#### 3h. Convention triage
 
 Review the auto-detected conventions. Classify them:
 
@@ -121,8 +163,12 @@ Also check for pending promotion proposals and flag ones worth accepting.
 
 Before writing any file, present the full plan to the user organized by category:
 
+**Stated-vs-actual mismatches** (from 3b) — if any stated architectural intent was contradicted by the graph, present the mismatch table first. For each, show the proposed constraint (advisory or blocking) and whether it's debt or doc drift. This is the highest-signal section — these constraints come from human-authored intent, not just graph analysis.
+
+**Naming heuristic flags** (from 3c) — if any suspicious cross-layer edges were found, present them as questions: "Should `apps/foo.py` import `swe` directly, or should this go through an intermediary?" Let the human classify each as intentional, debt, or false positive.
+
 **Blocking constraints** — the rules the guard will enforce in real time.
-Show each with: kind, from/to (or scope), name, and one-line rationale.
+Show each with: kind, from/to (or scope), name, and one-line rationale. Include `provenance` for any constraint derived from a stated architecture doc.
 
 **Advisory constraints** — known debt documented as rules.
 Show each with the current violation and why it's advisory not blocking.
