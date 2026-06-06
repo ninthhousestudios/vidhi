@@ -11,6 +11,8 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 | `vidhi-init` | Bootstrap project context docs (domain, issue-tracker, triage-labels) |
 | `vidhi-domain` | Establish/refine CONTEXT.md and ADRs — domain vocabulary |
 | `vidhi-survey` | Big-picture assessment of current state |
+| `vidhi-sutra` | Onboard an existing repo in sutra's conventions and constraints system |
+
 
 ### Design
 

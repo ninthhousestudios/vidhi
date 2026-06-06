@@ -1,5 +1,5 @@
 ---
-name: vidhi-onboard
+name: vidhi-sutra
 description: Onboard a codebase into sutra — register the workspace, discover architecture, and propose a .sutra/rules.toml with constraints and convention management. Use when bringing a new project under sutra code intelligence for the first time, or when resetting an existing project's constraint rules from scratch.
 ---
 
