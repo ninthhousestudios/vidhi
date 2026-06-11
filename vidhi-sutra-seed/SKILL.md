@@ -1,12 +1,12 @@
 ---
 name: vidhi-sutra-seed
-description: Seed sutra governance for a codebase that doesn't exist yet — derive .sutra/rules.toml, an enforcement ledger, and aliases.toml from a PRD instead of an import graph. Use at project birth, after a PRD exists but before any code is scaffolded. vidhi-sutra is the adoption pass for existing code; this is the birth pass.
+description: Seed sutra governance for a codebase that doesn't exist yet — derive .sutra/rules.toml, an enforcement ledger, and aliases.toml from a PRD instead of an import graph. Use at project birth, after a PRD exists but before any code is scaffolded. vidhi-sutra-adopt is the adoption pass for existing code; this is the birth pass; vidhi-sutra-tend maintains both at checkpoints.
 ---
 
 # Sutra Seeding (greenfield)
 
 Generate `.sutra/rules.toml`, a seed `aliases.toml`, and an **enforcement ledger**
-for a codebase that doesn't exist yet, from its PRD. Where vidhi-sutra discovers
+for a codebase that doesn't exist yet, from its PRD. Where vidhi-sutra-adopt discovers
 architecture from an import graph, this skill extracts it from stated intent —
 and because there is no code to contradict the PRD, every claim is enforceable
 from the first commit.
@@ -53,7 +53,7 @@ is the stronger enforcement.
 
 ### 2. Extract claims with quotes
 
-Sweep the PRD for architectural claims. Taxonomy (vidhi-sutra step 2, adapted
+Sweep the PRD for architectural claims. Taxonomy (vidhi-sutra-adopt step 2, adapted
 for greenfield — deprecations rarely apply, external-dependency claims dominate):
 
 - **Layer/crate boundaries** — "server is the only binary", "report knows nothing of Axum"
@@ -191,9 +191,10 @@ Record these in the ledger's maintenance note (and tell the user):
 - **Guard from first commit** — blocking rules are live the moment code exists.
 - **Per-task review** — `sutra_review` runs in vidhi-review per task; the
   ledger's (c)-bucket items are review-checklist material.
-- **First review checkpoint** — run convention triage (vidhi-sutra step 3h)
-  there, when FCA has real data; also the trigger for fan-in guardrails.
-  vidhi-sutra is the adoption pass; it takes over from here.
+- **First review checkpoint** — run **vidhi-sutra-tend** there: it fires due
+  triggers, runs the initial convention triage (FCA has real data by then),
+  sets fan-in guardrails, and constrains the module interiors that didn't
+  exist at seed time. Tend takes over maintenance from here.
 - **New track PRDs** — re-run this skill additively: append constraints with
   their own provenance, append ledger rows. Never regenerate from scratch.
 
@@ -214,4 +215,4 @@ unless `include_dev = true`.
 
 Defer until structure exists: `no_cycles` (scope is an invented module path),
 `boundary` (components don't exist yet), `max_fan_in` (needs data). Full
-table: vidhi-sutra § Reference.
+table: vidhi-sutra-adopt § Reference.

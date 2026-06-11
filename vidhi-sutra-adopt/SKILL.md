@@ -1,15 +1,15 @@
 ---
-name: vidhi-sutra
-description: Onboard a codebase into sutra — register the workspace, discover architecture, and propose a .sutra/rules.toml with constraints and convention management. Use when bringing a new project under sutra code intelligence for the first time, or when resetting an existing project's constraint rules from scratch.
+name: vidhi-sutra-adopt
+description: Adopt an existing codebase into sutra — register the workspace, discover architecture from the import graph, and propose a .sutra/rules.toml with constraints and convention management. Use when bringing a codebase with existing code under sutra governance for the first time, or when resetting a project's constraint rules from scratch.
 ---
 
-# Sutra Onboarding
+# Sutra Adoption
 
 Generate a `.sutra/rules.toml` for a codebase by discovering its architecture, analyzing dependency patterns, and deriving constraints from what's actually there. The output is a reviewed, committed rules file — not a template.
 
 This is an interactive skill. You explore, analyze, present findings, and let the user shape the rules before writing.
 
-For a codebase that doesn't exist yet (PRD but no code), use **vidhi-sutra-seed** instead — it derives the rules from stated intent and hands binding verification to the scaffold task. This skill is the adoption pass; seed is the birth pass.
+Siblings: for a codebase that doesn't exist yet (PRD but no code), use **vidhi-sutra-seed** — it derives rules from stated intent and hands binding verification to the scaffold task. For a repo that is already governed, use **vidhi-sutra-tend** — checkpoint maintenance that appends deltas, never regenerates. Seed births governance, this skill retrofits it, tend keeps it true.
 
 ## Preconditions
 
