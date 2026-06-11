@@ -87,17 +87,15 @@ severity exists to grandfather existing debt; a greenfield has none.
 ("at scaffold (task N): fix scope path and uncomment", "at first review
 checkpoint"). Binding is then uncomment-and-verify, not re-derivation.
 
-**Multi-crate Cargo caveat.** Sibling-crate imports do not resolve to graph
-edges (sutra/needs-designing/15), so `forbidden_dep`/`boundary` *between*
-workspace crates are silently inert. Express crate-to-crate seams with the
-external kinds instead (`forbidden_external` with the sibling crate's name in
-`crates`) — these check use-statements and Cargo.toml `[dependencies]` and are
-guard-enforced today. Mark each such rule in the ledger to migrate to
-`forbidden_dep`/`boundary` when 15 lands.
+**Crate-to-crate seams are `forbidden_dep`.** Cross-crate import resolution
+landed in sutra (needs-designing/15): sibling-crate imports resolve to real
+edges. Never express an in-workspace seam with the external kinds — a
+`forbidden_external`/`confined_external` whose `crates` names a workspace
+member is a hard error once the workspace manifest exists.
 
-**Known-inert kinds.** `max_fan_in` is currently inert
-(sutra/simple-additions/8) and needs real fan-in data anyway — always bucket
-(b), trigger at first review checkpoint.
+**`max_fan_in` is always deferred** — not for tooling reasons, but because
+thresholds need real fan-in data. Bucket (b), trigger at first review
+checkpoint.
 
 **Prefer `confined_external` over scattered forbids.** "Report knows nothing
 of Axum" plus "the only binary is server" collapses to `confined_external
@@ -164,12 +162,14 @@ sutra_constraints(workspace="<name>", action="list")
 sutra_constraints(workspace="<name>", action="violations")
 ```
 
-What this verifies at seed time: rules.toml **parses** and all N constraints
-**load**, with 0 violations. What it cannot verify yet: that globs bind — with
-no source files, every glob matches nothing (the zero-match warning is also
-still open, sutra/simple-additions/7). Binding verification is the scaffold
-task's job, which is why step 8 exists. If sutra can't register an empty
-workspace, record that in the ledger and defer all verification to scaffold.
+What this verifies at seed time: rules.toml **parses**, all N constraints
+**load**, and there are 0 real violations. Expect exactly N `dead_constraint`
+*informational* warnings — with no source files, every glob is inert, and
+sutra says so explicitly. That's correct at seed time; record it in the
+ledger. The scaffold task's acceptance criterion is precisely that those
+warnings disappear (every glob binds), which is why step 8 exists. If sutra
+can't register an empty workspace, record that and defer all verification to
+scaffold.
 
 ### 8. Hand off to the scaffold task
 
@@ -204,14 +204,14 @@ crate-name, so PRD-fixed crate names are enough to bind:
 
 | Kind | Fields | Use |
 |---|---|---|
-| `forbidden_external` | `crates` (name globs), optional `from` (path glob, default `**`), `include_dev` | License boundaries, leaf-crate seams ("report must not depend on server") |
+| `forbidden_external` | `crates` (name globs), optional `from` (path glob, default `**`), `include_dev` | License boundaries, banned crates |
 | `confined_external` | `crates`, `allowed_in` (path globs; `[]` = banned everywhere), `include_dev` | Single-point-of-contact ("protos only in quiver-client", "axum only in server") |
+| `forbidden_dep` | `from`, `to` (path globs) | Crate-to-crate seams ("report must not depend on server") — never the external kinds for these; naming a workspace member there is a hard error |
 
-Crate-name globs allowed; hyphens/underscores equivalent. Both kinds check
-use-statements **and** Cargo.toml `[dependencies]`; dev-deps exempt unless
-`include_dev = true`.
+Crate-name globs allowed; hyphens/underscores equivalent. The external kinds
+check use-statements **and** Cargo.toml `[dependencies]`; dev-deps exempt
+unless `include_dev = true`.
 
-Defer until paths exist: `no_cycles` (scope), `forbidden_dep`/`boundary`
-(also inert between workspace crates until sutra/needs-designing/15),
-`max_fan_in` (inert, sutra/simple-additions/8; needs data). Full table:
-vidhi-sutra § Reference.
+Defer until structure exists: `no_cycles` (scope is an invented module path),
+`boundary` (components don't exist yet), `max_fan_in` (needs data). Full
+table: vidhi-sutra § Reference.

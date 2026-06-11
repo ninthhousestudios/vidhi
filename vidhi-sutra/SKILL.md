@@ -309,9 +309,10 @@ Only suggest this — don't write it without explicit approval, since it changes
 | `forbidden_external` | `crates` (name globs); optional `from` (path glob, default `**`), `include_dev` | blocking | Forbid external crates/packages within a scope. Checked from import paths AND Cargo.toml `[dependencies]` |
 | `confined_external` | `crates`, `allowed_in` (path globs; `[]` = banned everywhere); optional `include_dev` | blocking | External crates importable ONLY from listed paths (single-point-of-contact rules) |
 
-Note: in a multi-crate Cargo workspace, sibling-crate imports are classified as
-external, so the external kinds also express crate-to-crate seams (`from =
-"report/**", crates = ["server"]`).
+Note: in a multi-crate Cargo workspace, sibling-crate imports resolve to real
+edges (since sutra/needs-designing/15), so crate-to-crate seams use
+`forbidden_dep`/`boundary`. Naming a workspace member in an external kind's
+`crates` is a hard error.
 
 ## Reference: convention lifecycle
 
