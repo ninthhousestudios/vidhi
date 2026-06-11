@@ -145,9 +145,14 @@ rather than quietly underdelivering.
 Present the backfill list as a **batch triage**: one line per item, the user
 answers inline ("mechanism was X" / "superseded by Y" / "skip"), and you
 write the backfills immediately. Human CLI closures are *expected* to arrive
-bare — the human is not bound by agent close-out discipline, and resuming a
-session per task is exactly the friction this batch step exists to absorb.
-Never propose blocking human closes; triage them here instead.
+bare — the human is not bound by agent close-out discipline. Never propose
+blocking human closes.
+
+But human memory decays faster than reflect cadence: the primary capture for
+human closes is the close-time CLI shorthand (`--reason`, `-m`; yojana/40),
+not this triage. Treat batch triage as the net for what still arrives bare,
+expect "don't remember" on anything old, and record those as permanent gaps
+without nagging — a skipped backfill twice is closed, not re-asked.
 
 ### 6. Present the plan
 
