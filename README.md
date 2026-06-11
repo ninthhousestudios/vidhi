@@ -60,6 +60,8 @@ vidhi-domain          → sharpen vocabulary, update CONTEXT.md (optional — sk
   ↓
 vidhi-prd             → capture the design as a PRD
   ↓
+vidhi-sutra-seed      → (greenfield repos) seed constraints + enforcement ledger from the PRD
+  ↓
 vidhi-decompose       → break PRD into yojana tasks with dependencies and planning tags
   ↓
 vidhi-premortem       → stress-test the decomposition for gaps and risks
@@ -71,6 +73,27 @@ vidhi-premortem       → stress-test the decomposition for gaps and risks
 ```
 
 Not every project needs every step. Small features can skip brainstorm and go straight to PRD. Bug fixes can skip everything and go straight to `vidhi-diagnose`. Use judgment.
+
+### Sutra governance lifecycle
+
+Three skills keep a codebase's architecture machine-enforced through sutra, one per lifecycle moment:
+
+| Skill | Moment | Input → Output |
+|---|---|---|
+| `vidhi-sutra-seed` | birth — PRD exists, no code | PRD claims → rules.toml + enforcement ledger + CLAUDE.md invariants, guard on from first commit |
+| `vidhi-sutra-adopt` | adoption — code exists, no governance | import graph + doc archaeology → reviewed rules.toml |
+| `vidhi-sutra-tend` | checkpoint — code and governance both exist | ledger vs. actual graph → deltas: fire deferred triggers, catch drift, constrain emergent structure, triage conventions |
+
+The connective tissue is the **enforcement ledger** (`docs/enforcement-ledger.md` in the governed repo): every architectural claim in the PRD routed to exactly one enforcement mechanism — live sutra constraint, deferred constraint with a binding trigger, CLAUDE.md invariant, or test assertion — so silent non-enforcement is impossible. Seed creates it; tend maintains it; adopt can backfill one.
+
+How they hook into the pipeline:
+
+- **seed** runs between `vidhi-prd` and `vidhi-decompose`. Constraints whose paths the PRD fixes go live immediately; the rest are deferred with named triggers. Binding verification ("every glob matches ≥1 real file") is handed to the scaffold task as machine-checkable acceptance criteria.
+- **decompose** marks which review checkpoints are tend moments (see its step 5) and keeps deferred-constraint triggers pointing at real tasks.
+- **tend** runs at those checkpoints — especially the first one, when module interiors exist for the first time and FCA has data for the initial convention triage. It appends deltas, never regenerates: rules derived from a drifted graph would bless the drift.
+- **review** (`vidhi-review` / `vidhi-release-review`) treats the ledger's not-expressible-in-sutra invariants as checklist items; per-task enforcement of live constraints is the sutra guard's job, in real time.
+
+New track PRDs landing on a governed repo re-run seed additively — append constraints with their own provenance, never regenerate.
 
 ### Planning in waves
 

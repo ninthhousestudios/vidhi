@@ -63,6 +63,14 @@ Good checkpoint boundaries:
 
 Present the proposed checkpoints to the user and confirm. For each checkpoint, show which slices are included and why this is a stable review point.
 
+**Sutra tending**: if the repo is sutra-governed (`.sutra/rules.toml` exists or vidhi-sutra-seed ran against this PRD), decide which checkpoints are also **vidhi-sutra-tend** moments, and say so in those review tasks' bodies. Heuristics:
+
+- The **first checkpoint after foundational slices** is almost always one — module interiors exist for the first time (and can be constrained while still small), and FCA has data for the initial convention triage.
+- A checkpoint where a **track's code has settled** (its slices complete, before the next track builds on them) is a natural tend moment for the structure that track grew.
+- Cross-check `.sutra/rules.toml` for deferred `# TRIGGER:` blocks: every trigger naming a checkpoint or review event must map to an actual published task, or the deferred constraint is orphaned. Where a trigger names a task you're about to create, reference the real task id back into the rules file (or flag it for the seed/tend pass to update).
+
+Not every checkpoint needs tending — a checkpoint reviewing pure behavior changes inside already-constrained structure doesn't. Name the tend moments deliberately rather than blanketing every review task.
+
 When publishing (step 6), create a **review task** for each checkpoint:
 - Type: HITL, status: `ready-for-human`
 - Title: "5x-review-N: review {checkpoint description}"
