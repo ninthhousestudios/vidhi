@@ -142,6 +142,13 @@ theme-adjacent). This section is mandatory — when mining comes back thin,
 the gap report is the pass's main product, and it feeds the discipline loop
 rather than quietly underdelivering.
 
+Present the backfill list as a **batch triage**: one line per item, the user
+answers inline ("mechanism was X" / "superseded by Y" / "skip"), and you
+write the backfills immediately. Human CLI closures are *expected* to arrive
+bare — the human is not bound by agent close-out discipline, and resuming a
+session per task is exactly the friction this batch step exists to absorb.
+Never propose blocking human closes; triage them here instead.
+
 ### 6. Present the plan
 
 One table: theme · evidence (task ids) · tier · mechanism · draft text. Plus

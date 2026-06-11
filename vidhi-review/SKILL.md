@@ -19,6 +19,16 @@ Review code changes scoped to one or more yojana tasks. Lighter than vidhi-relea
 - **Architecture improvement** — use vidhi-deepen. This skill checks what's there, not what could be better.
 - **Bug investigation** — use vidhi-diagnose. Don't use review to find the bug; review checks whether the fix is right.
 
+## The adversarial pass is load-bearing
+
+First global reflect pass (lessons ledger L5, 2026-06-11): every reviewed
+wave across four projects surfaced high-severity findings the implementation
+missed, and twice the landed *fix* was itself wrong (a timeout that couldn't
+preempt blocking work; a queue write ordered after the cascade that erased
+its inputs). Treat the adversarial review as a second design step, required
+before a wave or task closes — not an optional quality gate to skip when
+confident. Confidence was present in every one of those cases.
+
 ## Entry
 
 Accepts one or more yojana task IDs: `vidhi-review chitta/32` or `vidhi-review chitta/32 chitta/33 chitta/34`.

@@ -104,6 +104,9 @@ After all tests pass, look for [refactor candidates](refactoring.md):
 [ ] Test describes behavior, not implementation
 [ ] Test uses public interface only
 [ ] Test would survive internal refactor
+[ ] Assertions pin invariants, not seeded defaults — absolute counts of seed
+    data and blanket suppressions break on scaffolding churn or silently
+    absorb regressions; assert relative properties (lessons ledger L7)
 [ ] Code is minimal for this test
 [ ] No speculative features added
 ```
