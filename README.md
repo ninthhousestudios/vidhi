@@ -12,6 +12,7 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 | `vidhi-domain` | Establish/refine CONTEXT.md and ADRs — domain vocabulary |
 | `vidhi-survey` | Big-picture assessment of current state |
 | `vidhi-sutra` | Onboard an existing repo in sutra's conventions and constraints system |
+| `vidhi-sutra-seed` | Seed sutra governance for a greenfield repo from its PRD — rules.toml + enforcement ledger |
 
 
 ### Design

@@ -9,6 +9,8 @@ Generate a `.sutra/rules.toml` for a codebase by discovering its architecture, a
 
 This is an interactive skill. You explore, analyze, present findings, and let the user shape the rules before writing.
 
+For a codebase that doesn't exist yet (PRD but no code), use **vidhi-sutra-seed** instead — it derives the rules from stated intent and hands binding verification to the scaffold task. This skill is the adoption pass; seed is the birth pass.
+
 ## Preconditions
 
 - Sutra MCP server must be available (check for `sutra_status` tool). If not, stop and tell the user.
