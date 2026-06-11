@@ -279,7 +279,7 @@ N constraints covering <summary of categories>.
 Suppress M tautological FCA conventions.
 ```
 
-### 9. Optional: guard setup
+### 9. guard setup
 
 If the project uses Claude Code and the constraints include blocking rules, offer to set up the sutra-guard hook. Show the user what to add to `.claude/settings.json`:
 
@@ -304,6 +304,12 @@ Only suggest this — don't write it without explicit approval, since it changes
 | `boundary` | `from_component`, `to_component` | blocking | Prevent cross-component imports |
 | `no_cycles` | `scope` (path prefix) | blocking | Ban import cycles within a subtree |
 | `max_fan_in` | `target` (file path), `threshold` | advisory | Alert when a file exceeds N importers |
+| `forbidden_external` | `crates` (name globs); optional `from` (path glob, default `**`), `include_dev` | blocking | Forbid external crates/packages within a scope. Checked from import paths AND Cargo.toml `[dependencies]` |
+| `confined_external` | `crates`, `allowed_in` (path globs; `[]` = banned everywhere); optional `include_dev` | blocking | External crates importable ONLY from listed paths (single-point-of-contact rules) |
+
+Note: in a multi-crate Cargo workspace, sibling-crate imports are classified as
+external, so the external kinds also express crate-to-crate seams (`from =
+"report/**", crates = ["server"]`).
 
 ## Reference: convention lifecycle
 
