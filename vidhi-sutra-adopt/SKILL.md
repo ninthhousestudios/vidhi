@@ -290,7 +290,10 @@ If the project uses Claude Code and the constraints include blocking rules, offe
   "hooks": {
     "PreToolUse": [{
       "matcher": "Edit|Write",
-      "command": "sutra-guard"
+      "hooks": [{
+        "type": "command",
+        "command": "sutra-guard"
+      }]
     }]
   }
 }
