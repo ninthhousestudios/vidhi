@@ -71,7 +71,7 @@ Call `sutra_review` (requires analysis tier — call `sutra_tools enable: ["anal
 - Convention violations (FCA: pattern breaks in changed code)
 - Recommended reads ranked by review priority
 
-Use `diff="staged"` or `diff="unstaged"` if the task's commits aren't on a branch yet. Default is `diff="branch"` (against main merge-base).
+Pass `diff="<base>..<head>"` using the commit range resolved in step 2 — this is essential when commits are already on main, since the default `diff="branch"` diffs against the merge-base and returns nothing for on-main work. Use `diff="staged"` or `diff="unstaged"` if the task's commits aren't on a branch yet.
 
 This tells the reviewer: how risky is this change, what else might break, and where to focus. The recommended reads list is especially useful — it prioritizes convention violation sites over plain affected symbols.
 
