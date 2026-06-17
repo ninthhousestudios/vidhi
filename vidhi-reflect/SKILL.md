@@ -1,6 +1,6 @@
 ---
 name: vidhi-reflect
-description: Mine the yojana corpus for recurring engineering lessons — cluster root causes, failed approaches, and decisions into themes, route each theme to exactly one enforcement tier (sutra rules, conventions, CLAUDE.md, playbook docs, remediation tasks, vidhi deltas), and report capture gaps. Use at release-review checkpoints (project scope) or periodically across all projects (global scope). vidhi-sutra-tend reconciles code against stated architecture; this reconciles practice against accumulated experience.
+description: Mine the yojana corpus for recurring engineering lessons — cluster root causes, failed approaches, and decisions into themes, route each theme to exactly one enforcement tier (sutra rules, conventions, lessons store, project CLAUDE.md, playbook docs, remediation tasks, vidhi deltas), prune/flag/dedup the lessons store, and report capture gaps. Use at release-review checkpoints (project scope) or periodically across all projects (global scope). vidhi-sutra-tend reconciles code against stated architecture; this reconciles practice against accumulated experience.
 ---
 
 # Reflect (lesson extraction)
@@ -14,20 +14,28 @@ and let the user shape it before writing. Lesson extraction is a taste
 judgment — what generalizes vs. what was situational — so nothing is written
 without the user seeing the routing first.
 
-## Core idea: the lessons ledger
+## Core idea: the lessons ledger + lessons store
 
-The deliverable is not prose insight — it is **routing of every accepted theme
-to exactly one enforcement mechanism**, recorded in a ledger
-(`~/soft/manas/docs/lessons/ledger.md`) the same way the enforcement ledger
-records architectural claims. A lesson with no mechanism is a blog post; a
-mechanism with no provenance is folklore. Every ledger row carries the yojana
-task ids that evidence it.
+Two complementary records:
+
+- **Ledger** (`~/soft/manas/docs/lessons/ledger.md`) — the routing table of
+  record. Every accepted theme maps to exactly one enforcement mechanism;
+  every row carries the yojana task IDs that evidence it. A lesson with no
+  mechanism is a blog post; a mechanism with no provenance is folklore.
+- **Lessons store** (`~/.sutra/lessons.db` via `sutra_remember`) — the
+  contextual surfacing layer. Tier (c) lessons live here, anchored to
+  symbols/files/imports so sutra surfaces them to agents working in the
+  relevant code. Quality controlled by a confidence lifecycle: born
+  unverified, gain confidence through citation, decay/archive if uncited.
+
+The ledger records *what was routed where and why*. The lessons store is *the
+enforcement mechanism* for tier (c). Both are maintained by this skill.
 
 | Tier | Mechanism | When |
 |---|---|---|
 | (a) | **Per-project sutra constraint** — rules.toml delta, tend discipline | graph-expressible: dependency seams, `confined_external`, cycles |
 | (b) | **Sutra convention** — lifecycle to preferred/forbidden | code pattern FCA can detect |
-| (c) | **`~/CLAUDE.md` lessons section** — hard budget, see below | agent-behavioral, applies across projects |
+| (c) | **Lessons store** via `sutra_remember` — contextually surfaced by sutra tools | agent-behavioral, applies across projects |
 | (d) | **Project CLAUDE.md** | agent-behavioral, one project |
 | (e) | **Playbook doc** — `~/soft/manas/docs/lessons/<theme>.md` | too big for any prompt; (c)/(d) entries point at it |
 | (f) | **Remediation yojana tasks** | a specific codebase needs a specific fix |
@@ -54,16 +62,32 @@ has proven itself over several passes.
   -readonly` — the MCP list shapes don't return close-out fields, and mining
   wants SQL anyway).
 - Scope decided: a project slug (includes descendant subprojects) or global.
-- `~/soft/manas/docs/lessons/ledger.md` — created on first run with a
-  header recording the high-water mark per scope.
+- Lessons store reachable at `~/.sutra/lessons.db` (sutra MCP must be
+  running for `sutra_remember` calls).
+- `~/soft/manas/docs/lessons/ledger.md` — the routing table of record.
 
 ## Process
 
 ### 1. Establish the window
 
-Read the ledger header for the scope's last-pass watermark (max `completed_at`
-mined). First run: no watermark, mine everything, and say so — the first
-global pass is the big one.
+Read the watermark from the lessons store metadata table:
+
+```sql
+-- Bootstrap (first run only):
+CREATE TABLE IF NOT EXISTS metadata (
+    key   TEXT NOT NULL PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+-- Read watermark:
+SELECT value FROM metadata
+WHERE key = 'reflect_watermark:<scope>';
+```
+
+Where `<scope>` is the project slug or `global`. The value is the max
+`completed_at` timestamp (integer ms, matching yojana's format) from the
+previous pass. First run: no watermark row, mine everything, and say so —
+the first global pass is the big one.
 
 ### 2. Mine
 
@@ -109,22 +133,133 @@ extracted theme appends task ids to its row (and questions whether the chosen
 mechanism is actually working — a tier-(c) rule that keeps recurring wants
 promotion to (a)/(b)/(f), not a louder sentence).
 
-### 4. Route
+Also check against existing lessons in the store — a candidate matching an
+existing lesson is evidence for citation, not a new lesson:
+
+```
+sutra_remember cite="<lesson_id>" source_tasks=["<task_id>"]
+```
+
+### 4. Lessons store maintenance
+
+Before routing new themes, maintain the existing store. These three passes run
+every reflect invocation.
+
+#### 4.1 Prune decayed lessons
+
+`LessonsDb::archive_decayed()` runs automatically on DB open with a 90-day
+window, silently archiving the obvious cases (no citations, no surfacings,
+past window). This pass reviews the borderline cases with human judgment.
+
+Find unverified lessons that have been surfaced but never cited — they reached
+agents but never proved useful enough to reference in a close-out:
+
+```sql
+SELECT l.id, l.text, l.created_at, l.last_surfaced, l.confidence,
+       l.project_origin
+FROM lessons l
+WHERE l.archived = 0 AND l.verified = 0
+  AND l.last_surfaced IS NOT NULL
+  AND (l.last_cited IS NULL OR l.last_cited < datetime('now', '-90 days'))
+  AND l.created_at < datetime('now', '-90 days')
+ORDER BY l.created_at;
+```
+
+Present each to the user: "Surfaced but never cited in 90+ days — keep or
+archive?" The user answers inline. Archive decisions are immediate:
+
+```sql
+UPDATE lessons SET archived = 1 WHERE id = '<id>';
+```
+
+Report: "Pruned N lessons (M auto-archived by decay, K archived after
+review, J kept by user)."
+
+#### 4.2 Flag stale verified lessons
+
+Check verified lessons for anchor code drift. The staleness machinery
+exists in sutra (`LessonsDb::check_staleness` + `anchor_verification` table
+with content hashes snapshotted at verification time).
+
+```sql
+SELECT l.id, l.text, l.verified_at,
+       a.kind, a.value, av.content_hash
+FROM lessons l
+JOIN anchor_verification av ON av.lesson_id = l.id
+JOIN anchors a ON a.id = av.anchor_id
+WHERE l.verified = 1 AND l.archived = 0;
+```
+
+For each verified lesson, compare the stored `content_hash` against the
+current hash of the anchored symbol/file (resolve via the workspace index).
+If changed, present to user with three choices:
+
+- **Still valid** → re-cite the lesson to refresh verification hashes:
+  `sutra_remember cite="<lesson_id>" workspace="<path>"`
+- **Needs update** → edit lesson text, re-store as new lesson with same
+  anchors, archive the stale one
+- **Archive** → `UPDATE lessons SET archived = 1 WHERE id = '<id>';`
+
+This is the human-in-the-loop complement to sutra's automatic `[stale]`
+flagging during surfacing. Surfacing flags stale lessons for agents to treat
+with caution; reflect resolves them.
+
+#### 4.3 Deduplicate overlapping lessons
+
+Find lessons sharing anchors that may say the same thing:
+
+```sql
+SELECT a1.lesson_id AS id1, a2.lesson_id AS id2,
+       COUNT(*) AS shared_anchors
+FROM anchors a1
+JOIN anchors a2 ON a1.kind = a2.kind AND a1.value = a2.value
+     AND a1.lesson_id < a2.lesson_id
+JOIN lessons l1 ON l1.id = a1.lesson_id AND l1.archived = 0
+JOIN lessons l2 ON l2.id = a2.lesson_id AND l2.archived = 0
+GROUP BY a1.lesson_id, a2.lesson_id
+HAVING shared_anchors >= 1
+ORDER BY shared_anchors DESC;
+```
+
+For each pair with shared anchors, read both lesson texts and judge: are they
+saying the same thing in different words? Present merge candidates:
+
+- "Lessons `<id1>` and `<id2>` share N anchors. Text comparison: [show both].
+  Merge? Which text to keep?"
+
+Merge operation (when user approves):
+1. Keep the higher-confidence lesson
+2. Add the other's unique anchors to the keeper
+3. Move the other's citations to the keeper
+4. Archive the duplicate
+
+Automated merge is too risky — two lessons anchored to the same file may be
+about completely different concerns. This pass always presents and waits.
+
+### 5. Route
 
 Assign each accepted theme a tier. Rules of the road:
 
 - **Prefer the most mechanical tier that fits.** Enforced-by-guard beats
-  detected-by-FCA beats remembered-by-agent. (c)/(d) is the fallback, not the
+  detected-by-FCA beats remembered-by-agent. (c) is the fallback, not the
   default.
 - **(a)/(b) deltas go through the owning repo's governance** — append to its
   rules.toml with `provenance = "reflect:<ledger-row>"`, severity per
   vidhi-sutra-adopt classification (existing violations → advisory). If the
   repo is governed, this is a mini-tend; do not regenerate anything.
-- **Tier (c) is budgeted**: the `<engineering_lessons>` section of
-  `~/CLAUDE.md` holds at most ~10 entries / ~40 lines. Adding an entry over
-  budget requires evicting one — demote the evictee to a playbook (e) and
-  leave a one-line pointer. Each entry is 1-3 sentences, imperative, with no
-  war story; the story lives in the ledger row.
+- **Tier (c) goes to the lessons store** via `sutra_remember`:
+  - `text`: imperative, 1-3 sentences, no war story — the story lives in the
+    ledger row
+  - `location_anchors`: symbols or files from the evidence tasks' `files`
+    fields or root_cause descriptions
+  - `source_tasks`: the yojana task IDs from the evidence column
+  - `project_origin`: null for cross-project themes, project slug for
+    single-project themes
+  - `categories`: technology/concern tags (e.g., `["sqlite", "concurrency"]`)
+  - `workspace`: a workspace path for anchor enrichment (sutra auto-adds
+    import-pattern anchors, directory anchors, and language categories)
+  - No cardinality cap — sutra's contextual surfacing replaces the broadcast.
+    Anchor specificity and category filtering naturally limit what surfaces.
 - **Tier (e) playbooks** are the deep version: the mechanism, the discipline,
   the evidence. Long-term this is vidya's lane; until vidya exists they live
   in manas docs.
@@ -133,7 +268,7 @@ Assign each accepted theme a tier. Rules of the road:
 - **Tier (g)** names the skill and the step ("vidhi-plan premortem should ask
   about write-path concurrency for any embedded-DB design").
 
-### 5. Capture-gap report
+### 6. Capture-gap report
 
 Count closures in the window that violated capture discipline: bugs closed
 without root_cause, wontfix without rationale, plans that visibly diverged
@@ -154,29 +289,52 @@ not this triage. Treat batch triage as the net for what still arrives bare,
 expect "don't remember" on anything old, and record those as permanent gaps
 without nagging — a skipped backfill twice is closed, not re-asked.
 
-### 6. Present the plan
+### 7. Present the plan
 
 One table: theme · evidence (task ids) · tier · mechanism · draft text. Plus
-the capture-gap list and any proposed evictions from the CLAUDE.md budget.
+the capture-gap list, the maintenance report (pruned/stale/deduped), and any
+proposed tier (c) `sutra_remember` calls with their anchors and categories.
 Ask the user to adjust routing before writing. Wait.
 
-### 7. Write
+### 8. Write
 
 - **Ledger** — append rows (theme, evidence ids, tier, mechanism, status,
-  date); update the scope watermark in the header.
-- **Tier artifacts** — rules.toml deltas (then `sutra_constraints list` +
-  `violations` to verify they load), convention lifecycle calls, CLAUDE.md
-  edits within budget, playbooks, remediation tasks, vidhi skill edits.
+  date). For tier (c), the mechanism column records `sutra_remember lesson
+  <lesson_id>` after the lesson is stored. Update the scope watermark in
+  the metadata table:
+  ```sql
+  INSERT OR REPLACE INTO metadata (key, value)
+  VALUES ('reflect_watermark:<scope>', '<max_completed_at>');
+  ```
+- **Tier (c) lessons** — store via `sutra_remember`:
+  ```
+  sutra_remember(
+    text="<lesson text>",
+    location_anchors=[{kind: "symbol", value: "<name>"}, ...],
+    source_tasks=["<task/N>", ...],
+    project_origin="<slug or null>",
+    categories=["<tag>", ...],
+    workspace="<path>"
+  )
+  ```
+  Record the returned `lesson_id` in the ledger row's mechanism column.
+- **Other tier artifacts** — rules.toml deltas (then `sutra_constraints list`
+  + `violations` to verify they load), convention lifecycle calls, project
+  CLAUDE.md edits, playbooks, remediation tasks, vidhi skill edits. These
+  are unchanged from prior behavior.
+- **Maintenance results** — pruning archives, staleness resolutions, dedup
+  merges already written during §4.
 - Commit doc/rule changes per owning repo, one unit each:
-  `Reflect pass (<scope>): <n> themes routed, <m> capture gaps`.
+  `Reflect pass (<scope>): <n> themes routed, <m> capture gaps, <k> lessons maintained`.
 
-### 8. Hand off
+### 9. Hand off
 
 Comment on the checkpoint task (or yojana/36-style tracking task for global
-passes): themes routed, gaps found, next natural pass. If the same
-graph-expressible theme has now recurred across ≥2 projects' rules.toml,
-file a sutra task proposing global rules support — that's the evidence
-threshold for building enforcement infrastructure, not before.
+passes): themes routed, gaps found, lessons maintained (pruned/flagged/deduped),
+next natural pass. If the same graph-expressible theme has now recurred across
+≥2 projects' rules.toml, file a sutra task proposing global rules support —
+that's the evidence threshold for building enforcement infrastructure, not
+before.
 
 ## Relationship to siblings
 
@@ -184,7 +342,7 @@ threshold for building enforcement infrastructure, not before.
 |---|---|---|---|
 | `vidhi-sutra-tend` | rules.toml + ledger vs. import graph | governance deltas | review checkpoints |
 | `vidhi-release-review` | the release diff | findings, tasks | release |
-| `vidhi-reflect` | yojana corpus vs. lessons ledger | routed lessons, capture-gap report | checkpoints (project) / quarterly (global) |
+| `vidhi-reflect` | yojana corpus vs. lessons ledger + lessons store | routed lessons, store maintenance, capture-gap report | checkpoints (project) / quarterly (global) |
 
 Tend catches drift between stated and actual architecture; reflect catches
 repetition between projects' mistakes. Both produce deltas with provenance,
