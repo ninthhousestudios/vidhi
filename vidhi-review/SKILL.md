@@ -138,6 +138,8 @@ node ~/.claude/plugins/codex/scripts/codex-companion.mjs adversarial-review \
 
 **Important:** The `review` subcommand does not accept custom focus text — use `adversarial-review` when passing task context. Always pass `--base` explicitly; omitting it diffs against main, which produces an empty diff if the reviewed commits are already on main.
 
+**Important:** Codex investigations (reading multiple files, diffing against base, sometimes running snippets to check edge cases) routinely run past the Bash tool's 2-minute default timeout, which kills the process and wastes the work done so far. Always call the script with an explicit `timeout` of at least 600000 (10 minutes) and `run_in_background: true` so a slow run doesn't block or get killed.
+
 The script returns review text. Parse it into the standard finding schema where possible, and record the raw output as a yojana comment on the task:
 
 ```

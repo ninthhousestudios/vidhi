@@ -11,7 +11,7 @@ Requires a yojana task ID (e.g., `project/N`).
 
 ## Workflow
 
-### 1. Pull context
+### 1. Pull context - unless you just wrote the plan to the task and are implementing it in the same session.
 
 ```
 yojana_context task="<task-id>" shape="working"
