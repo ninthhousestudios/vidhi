@@ -89,6 +89,14 @@ Where `<scope>` is the project slug or `global`. The value is the max
 previous pass. First run: no watermark row, mine everything, and say so —
 the first global pass is the big one.
 
+Project scope inherits the global floor: use
+`max(reflect_watermark:<slug>, reflect_watermark:global)` as the window
+start. A global pass already mined everything below the global mark, so a
+project pass with no per-project watermark must not re-mine that project's
+full history — it would redo covered work and re-present backfill items the
+user already triaged. (Global scope reads only its own key; per-project
+watermarks don't advance it.)
+
 The watermark MUST be the max `completed_at` **of the rows actually mined**,
 never the pass's own wall-clock time. A wall-clock watermark skips any task
 that closes while the pass is running (the chitta/43 bug class — its
