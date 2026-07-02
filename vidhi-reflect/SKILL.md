@@ -89,6 +89,13 @@ Where `<scope>` is the project slug or `global`. The value is the max
 previous pass. First run: no watermark row, mine everything, and say so —
 the first global pass is the big one.
 
+The watermark MUST be the max `completed_at` **of the rows actually mined**,
+never the pass's own wall-clock time. A wall-clock watermark skips any task
+that closes while the pass is running (the chitta/43 bug class — its
+reflect_status used run-completion time and could skip rows that arrived
+mid-run). Max-of-mined is safe: anything closing during the pass gets a
+`completed_at` above it and is caught next time.
+
 ### 2. Mine
 
 Query terminal tasks (`done`, `wontfix`) completed inside the window,
