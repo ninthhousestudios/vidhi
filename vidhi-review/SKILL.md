@@ -130,15 +130,21 @@ Call the codex companion script directly — don't load the codex plugin's slash
 
 Build focus text from the task context: acceptance criteria, key decisions, and any specific review concerns from the impact analysis. This enriches Codex's review with task-awareness it wouldn't otherwise have.
 
+**Write the focus text to a file first, then pass it via `"$(cat file)"`. Never inline it directly into the bash command string.** Focus text routinely contains backticks around code identifiers (`` `for niter in 0..2` ``, `` `eclipse_where` ``) and apostrophes (`isn't`, `doesn't`). Backticks inside a double-quoted bash string are command substitution — bash will try to execute `goto`, `retval`, etc. as commands, silently mangling the prompt actually sent to Codex (you'll see spurious "command not found" lines in the output, easy to miss since the script still runs). `"$(cat file)"` sidesteps this: command-substitution output is inserted literally and is never re-scanned for nested backtick/`$` expansion, so the file's content is safe regardless of what characters it contains.
+
 ```bash
+# 1. Write the focus text with the Write tool (not a heredoc) to a scratch path:
+#    /tmp/claude-.../scratchpad/codex-focus-<task>.txt
+# 2. Then, in ONE bash call with run_in_background + timeout both set:
 node ~/.claude/plugins/codex/scripts/codex-companion.mjs adversarial-review \
   --base <base-ref> \
-  "<focus text with acceptance criteria and task context>"
+  "$(cat /tmp/claude-.../scratchpad/codex-focus-<task>.txt)" \
+  > /tmp/claude-.../scratchpad/codex-out-<task>.log 2>&1
 ```
 
 **Important:** The `review` subcommand does not accept custom focus text — use `adversarial-review` when passing task context. Always pass `--base` explicitly; omitting it diffs against main, which produces an empty diff if the reviewed commits are already on main.
 
-**Important:** Codex investigations (reading multiple files, diffing against base, sometimes running snippets to check edge cases) routinely run past the Bash tool's 2-minute default timeout, which kills the process and wastes the work done so far. Always call the script with an explicit `timeout` of at least 600000 (10 minutes) and `run_in_background: true` so a slow run doesn't block or get killed.
+**Important:** Codex investigations (reading multiple files, diffing against base, sometimes running snippets to check edge cases) routinely run past the Bash tool's 2-minute default timeout, which kills the process and wastes the work done so far. Set `run_in_background: true` and an explicit `timeout` of at least 600000 (10 minutes) **in the same Bash call that launches the script** — not as a follow-up fix after it times out once. Redirect stdout/stderr to a log file (as above) so the background task's output is capturable; don't rely on the tool call's direct return.
 
 The script returns review text. Parse it into the standard finding schema where possible, and record the raw output as a yojana comment on the task:
 
