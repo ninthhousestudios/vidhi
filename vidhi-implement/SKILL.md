@@ -49,19 +49,7 @@ During execution:
 - Mark acceptance criteria done as they're satisfied → `yojana_task action=update id="<task-id>" acceptance_criteria=[...]`
 - Record design decisions discovered during implementation → update `decisions` field
 
-### 6. Adversarial review gate (non-trivial tasks)
-
-Before closing any non-trivial implementation (multi-file change, new subsystem,
-concurrency/numeric/security-adjacent code), run an independent adversarial pass:
-a fresh agent or external model (codex) reviewing the diff with no access to the
-author's framing. "Implemented as planned, all tests green" is not evidence of
-absence of bugs — across 15+ tasks in 5 projects (reflect 2026-07-02: sutra/162,
-sutra/179, sutra/218, arjuna/quiver/10, swe-dashboard/7, swisseph-rs/69,
-swisseph-rs/70 among others), a post-hoc adversarial pass found real defects the
-implementer's own tests missed, including a task marked done with its code still
-uncommitted. Trivial single-file changes may skip this; say so in the close-out.
-
-### 7. Complete
+### 6. Complete
 
 When all acceptance criteria are green:
 ```

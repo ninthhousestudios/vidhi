@@ -21,7 +21,7 @@ Read the acceptance criteria, decisions, description, and neighbor context. If a
 
 **Re-validate the description against current state.** Task descriptions are written at creation time and rot: an architecture decision made after the task was filed can invalidate its assumptions, and dependencies move under multi-day-old tasks (reflect 2026-07-02: ~10 swisseph-rs planning tasks each independently re-corrected the same stale stateful-caching assumption; vidhi/7 executed against a dependency that had moved the same day). Check the description's claims against the code as it is now; note corrections in the plan. If a landmark decision has invalidated many descriptions at once, propose a one-time backlog sweep instead of letting every future planning pass rediscover the same correction.
 
-### 2. Explore the codebase
+### 2. Explore the codebase in a precise, targeted way
 
 Before planning anything, go find the code. Read the files that this task will touch. Understand the interfaces, the types, the patterns already in use.
 
