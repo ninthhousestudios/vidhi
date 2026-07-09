@@ -36,7 +36,7 @@ Engineering methodology skills for Claude Code agents. Forked from [mattpocock/e
 | Skill | Purpose |
 |---|---|
 | `vidhi-implement` | Yojana-aware dispatcher — pulls task, follows plan if present, selects method, reports back |
-| `vidhi-tdd` | Red-green-refactor loop (standalone or called by vidhi-implement) |
+| `vidhi-tdd` | Red-green loop — reference material (standalone or called by vidhi-implement; refactoring lives in review) |
 | `vidhi-diagnose` | Bug investigation — hypothesize, isolate, confirm |
 | `vidhi-deepen` | Refactoring and structural improvement |
 
