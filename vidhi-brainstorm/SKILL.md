@@ -37,7 +37,7 @@ Ask questions one at a time. Wait for the answer before the next question.
 - Prefer multiple choice when the options are knowable. Open-ended when they aren't.
 - One question per message. If a topic needs more exploration, break it into multiple questions.
 - Focus on: purpose, constraints, success criteria, what "done" looks like.
-- If a question can be answered by exploring the codebase, explore the codebase instead of asking.
+- If a *fact* can be found by exploring the codebase, look it up rather than asking. The *decisions*, though, are the user's — put each one to them and wait for their answer.
 
 ### 4. Propose approaches
 
@@ -65,6 +65,8 @@ Ask after each section whether it looks right before continuing. Cover:
 ### 6. Confirm shared understanding
 
 Summarize the design in a few sentences. Confirm with the user that you both understand what's being built, what the approach is, and what's out of scope.
+
+Do not proceed to handoff — or any next step — until the user confirms you have reached a shared understanding.
 
 ## Handoff
 
