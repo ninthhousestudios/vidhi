@@ -1,6 +1,8 @@
 # vidhi
 
-Engineering methodology skills for Claude Code agents. Forked from [mattpocock/engineering](https://github.com/mattpocock/claude-code-skills) and adapted for the [manas](https://github.com/ninthhousestudios/manas) ecosystem.
+Engineering methodology skills for Claude Code agents. Mostly forked from [mattpocock/engineering](https://github.com/mattpocock/claude-code-skills) and adapted for the [manas](https://github.com/ninthhousestudios/manas) ecosystem.
+
+Provenance exceptions (matters when syncing upstream updates): `vidhi-brainstorm` comes from superpowers' brainstorming skill, not mp-skills; `vidhi-domain` is mp-skills' grill-with-docs (grilling + domain-modeling) adapted to nail down domain language; the `vidhi-sutra-*` skills, `vidhi-premortem`, `vidhi-reflect`, and `vidhi-survey` are vidhi-native with no upstream.
 
 ## Skills
 
