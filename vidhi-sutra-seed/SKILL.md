@@ -97,6 +97,16 @@ member is a hard error once the workspace manifest exists.
 thresholds need real fan-in data. Bucket (b), trigger at first review
 checkpoint.
 
+**Pattern constraints from the catalog.** Read
+`vidhi/language-rules/{language}.toml` for the project's language(s). Each
+`[[rule]]` maps a coding_discipline principle to an enforceable tree-sitter
+query. Include relevant rules in the routing plan as bucket (a) constraints
+with severity from `recommended_severity` (typically advisory for heuristic
+patterns; greenfield projects may escalate to blocking if the PRD demands
+strict discipline). Present each rule's `description` and `false_positives`
+to the user alongside the constraint plan. Scope comes from `scope_hint`,
+adjusted to match the project's layout.
+
 **Prefer `confined_external` over scattered forbids.** "Report knows nothing
 of Axum" plus "the only binary is server" collapses to `confined_external
 crates=["axum"] allowed_in=["server/**"]` — one rule, stronger than the sum of
@@ -212,6 +222,8 @@ crate-name, so PRD-fixed crate names are enough to bind:
 Crate-name globs allowed; hyphens/underscores equivalent. The external kinds
 check use-statements **and** Cargo.toml `[dependencies]`; dev-deps exempt
 unless `include_dev = true`.
+
+| `forbidden_pattern` | `language`, `query` (tree-sitter S-expression); optional `scope` | advisory | AST-pattern enforcement — coding discipline rules (no-clone, no-dynamic, etc.). Guard uses introduced-only semantics. See `vidhi/language-rules/` catalog for vetted rules per language |
 
 Defer until structure exists: `no_cycles` (scope is an invented module path),
 `boundary` (components don't exist yet), `max_fan_in` (needs data). Full

@@ -150,7 +150,29 @@ Identify directory subtrees where cycles would be architecturally harmful. Good 
 
 Don't add `no_cycles` to the entire `src/` — it's too broad and legitimate reference cycles exist in Rust (e.g., `mod.rs` re-exporting from submodules).
 
-#### 3h. Convention triage
+#### 3h. Pattern discipline
+
+Read `vidhi/language-rules/{language}.toml` for the project's language(s).
+For each catalog rule, run the query against the codebase (or estimate from
+grep as a proxy) to understand the current state:
+
+- **Match count** — how many existing matches would this rule surface?
+- **Distribution** — are matches concentrated (one legacy module) or pervasive?
+
+Present each rule with its `description`, current match count, and
+`false_positives` guidance. Let the user decide:
+
+- **Adopt as advisory** — document the discipline, surface in review
+- **Adopt as blocking** — enforce at edit time (only reasonable if match
+  count is low or all existing matches will be waived)
+- **Skip** — not relevant to this codebase
+- **Defer** — adopt at a later checkpoint after cleanup
+
+For adopted rules, the scope comes from `scope_hint` adjusted to match the
+project layout. Blocking patterns with existing matches need waivers planned
+(same as blocking dep constraints with existing violations in step 7).
+
+#### 3i. Convention triage
 
 Review the auto-detected conventions. Classify them:
 
@@ -311,6 +333,7 @@ Only suggest this — don't write it without explicit approval, since it changes
 | `max_fan_in` | `target` (file path), `threshold` | advisory | Alert when a file exceeds N importers |
 | `forbidden_external` | `crates` (name globs); optional `from` (path glob, default `**`), `include_dev` | blocking | Forbid external crates/packages within a scope. Checked from import paths AND Cargo.toml `[dependencies]` |
 | `confined_external` | `crates`, `allowed_in` (path globs; `[]` = banned everywhere); optional `include_dev` | blocking | External crates importable ONLY from listed paths (single-point-of-contact rules) |
+| `forbidden_pattern` | `language`, `query` (tree-sitter S-expression); optional `scope` | advisory | AST-pattern enforcement — coding discipline rules. Guard uses introduced-only semantics (pre-existing matches grandfathered). See `vidhi/language-rules/` catalog for vetted rules per language |
 
 Note: in a multi-crate Cargo workspace, sibling-crate imports resolve to real
 edges (since sutra/needs-designing/15), so crate-to-crate seams use

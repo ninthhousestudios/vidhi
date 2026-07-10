@@ -1,0 +1,67 @@
+# Rust forbidden_pattern rules catalog
+#
+# Skills (vidhi-sutra-seed, vidhi-sutra-adopt, vidhi-sutra-tend) read this
+# catalog and propose relevant rules during governance setup. Each [[rule]]
+# maps a coding_discipline principle to an enforceable tree-sitter query.
+#
+# To adopt a rule into a project, the skill writes a [[constraint]] block
+# into the project's .sutra/rules.toml with kind="forbidden_pattern",
+# language="rust", and the query/name/severity/scope from here.
+#
+# Queries are tree-sitter S-expressions validated against tree-sitter-rust.
+# Sutra validates at parse_rules time — invalid queries become parse errors.
+
+[[rule]]
+name = "no-clone-driven-dev"
+principle = "No Clone-Driven Development"
+query = '(call_expression function: (field_expression field: (field_identifier) @m (#eq? @m "clone"))) @match'
+recommended_severity = "advisory"
+scope_hint = "src/"
+provenance_hint = "CLAUDE.md coding_discipline"
+description = """
+Detects .clone() method calls. Clone is often used reflexively to silence \
+borrow checker errors rather than designing proper reference structures. \
+Advisory by default because legitimate uses exist (Arc sharing, cheap Copy \
+types, API-required owned values)."""
+false_positives = """
+Arc<str>/Arc<T> shared ownership, Copy types (small integers, enum variants), \
+API boundaries that require owned values, test fixtures. Waive with a rationale \
+naming the specific reason (e.g. "Arc<str> shared ownership")."""
+guidance = """
+If the clone is genuinely idiomatic (shared ownership, cheap copy, API requires \
+owned), waive for the enclosing symbol via sutra_constraints action=waive with \
+a rationale. Otherwise restructure: use references (&, &mut), explicit lifetimes, \
+or redesign data flow to avoid the copy."""
+
+[[rule]]
+name = "no-to-owned-bypass"
+principle = "No Clone-Driven Development"
+query = '(call_expression function: (field_expression field: (field_identifier) @m (#eq? @m "to_owned"))) @match'
+recommended_severity = "advisory"
+scope_hint = "src/"
+provenance_hint = "CLAUDE.md coding_discipline"
+description = """
+Detects .to_owned() calls. Often used as a clone equivalent to convert &str → \
+String or &[T] → Vec<T> to bypass borrow checker errors. Same principle as \
+no-clone-driven-dev."""
+false_positives = """
+Legitimate &str → String conversions at API boundaries, building owned \
+collections from slices for storage. Less noisy than clone since .to_owned() \
+is more intentional, but still worth flagging."""
+guidance = """
+If the function can accept a borrow (&str, &[T]) instead of requiring an owned \
+value, restructure the signature. If owned is genuinely needed (storing in a \
+struct, crossing an async boundary), waive with rationale."""
+
+# --- Principles that remain prose-only ---
+#
+# Prefer Slices Over Containers: detecting fn(s: String) vs fn(s: &str) is
+#   possible but high false-positive rate — owned params are sometimes correct.
+#   Stays as prose guidance in coding_discipline.
+#
+# Avoid Premature Dynamic Allocation: Box<dyn Trait> detection is possible
+#   but intent-dependent (heterogeneous collections legitimately need it).
+#   Could add as a very-advisory rule later if desired.
+#
+# Graph & Tree Semantics: too context-dependent for structural pattern
+#   matching. Stays prose-only.

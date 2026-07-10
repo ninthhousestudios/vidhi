@@ -1,0 +1,60 @@
+# Dart/Flutter forbidden_pattern rules catalog
+#
+# Skills (vidhi-sutra-seed, vidhi-sutra-adopt, vidhi-sutra-tend) read this
+# catalog and propose relevant rules during governance setup. Each [[rule]]
+# maps a coding_discipline principle to an enforceable tree-sitter query.
+#
+# Queries are tree-sitter S-expressions validated against tree-sitter-dart.
+# Sutra validates at parse_rules time — invalid queries become parse errors.
+# NOTE: Dart queries should be validated against a real Dart project at
+# adoption time; the grammar node names may need adjustment.
+
+[[rule]]
+name = "no-dynamic-type"
+principle = "Strict Typing (No Dynamic)"
+query = '(type_identifier) @m (#eq? @m "dynamic") @match'
+recommended_severity = "advisory"
+scope_hint = "lib/"
+provenance_hint = "CLAUDE.md coding_discipline"
+description = """
+Detects use of `dynamic` as a type annotation. Dynamic types escape Dart's \
+type system entirely — no compile-time checks, no autocompletion, runtime \
+errors instead of compile-time errors."""
+false_positives = """
+JSON deserialization boundaries (Map<String, dynamic> from dart:convert), \
+platform channel message handling, reflection-heavy code. These are genuine \
+dynamic boundaries — waive with rationale."""
+guidance = """
+Replace with generics (<T>), explicit interface types, or Object with \
+type checks. If the dynamic boundary is genuine (JSON parsing, platform \
+channels), waive and document why the type can't be narrowed."""
+
+[[rule]]
+name = "no-bang-null-assertion"
+principle = "Defensive Null Safety"
+query = '(postfix_expression operator: "!") @match'
+recommended_severity = "advisory"
+scope_hint = "lib/"
+provenance_hint = "CLAUDE.md coding_discipline"
+description = """
+Detects the `!` null-assertion operator. Bang assertions trade a compile-time \
+null check for a runtime exception — they're a bet that the value is never \
+null, with a crash as the penalty for being wrong."""
+false_positives = """
+Widget test finders (find.byType(X).evaluate().single.widget as X — always \
+non-null after find succeeds), late-initialized fields accessed after \
+guaranteed init, framework callbacks where null is structurally impossible. \
+Query may need grammar validation — postfix_expression node name varies."""
+guidance = """
+Use null-coalescing (?? with a default), conditional access (?.), or explicit \
+null checks (if (x != null)). If the value is structurally guaranteed non-null, \
+consider late or a redesign that eliminates the nullable type."""
+
+# --- Principles that remain prose-only ---
+#
+# Enforce Const Constructors: detecting missing `const` on constructor calls
+#   is possible but very noisy — not every constructor call benefits from const.
+#   Could add a scoped rule for specific widget trees later.
+#
+# Cascade & Collection Operators: would require required_pattern (absence
+#   detection), which is explicitly deferred in sutra's design. Stays prose-only.

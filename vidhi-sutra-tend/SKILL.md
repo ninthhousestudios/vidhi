@@ -108,6 +108,13 @@ sutra_hotspots(workspace="<name>")
   be independent: `no_cycles`
 - **New external crates** — dependencies added since last pass that deserve
   confinement ("only the db module touches X")
+- **New catalog rules** — read `vidhi/language-rules/{language}.toml` and
+  check for rules not yet adopted in this project's rules.toml (match by
+  `name`). New catalog entries added since last pass are candidates for
+  adoption. Also check pattern violation trends for existing pattern rules:
+  are waiver counts growing (rule too noisy, consider narrowing scope or
+  dropping to informational) or shrinking (team converging, consider
+  escalating to blocking)?
 
 Propose each as a new constraint with `provenance = "checkpoint:<task-id>"`
 and a one-line rationale. Apply vidhi-sutra-adopt's classification discipline
