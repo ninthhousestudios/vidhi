@@ -12,7 +12,7 @@
 [[rule]]
 name = "no-dynamic-type"
 principle = "Strict Typing (No Dynamic)"
-query = '(type_identifier) @m (#eq? @m "dynamic") @match'
+query = '((type_identifier) @match (#eq? @match "dynamic"))'
 recommended_severity = "advisory"
 scope_hint = "lib/"
 provenance_hint = "CLAUDE.md coding_discipline"
@@ -32,7 +32,7 @@ channels), waive and document why the type can't be narrowed."""
 [[rule]]
 name = "no-bang-null-assertion"
 principle = "Defensive Null Safety"
-query = '(postfix_expression operator: "!") @match'
+query = '(null_assertion_expression) @match'
 recommended_severity = "advisory"
 scope_hint = "lib/"
 provenance_hint = "CLAUDE.md coding_discipline"
