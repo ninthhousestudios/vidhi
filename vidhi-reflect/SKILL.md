@@ -231,10 +231,17 @@ JOIN anchors a2 ON a1.kind = a2.kind AND a1.value = a2.value
      AND a1.lesson_id < a2.lesson_id
 JOIN lessons l1 ON l1.id = a1.lesson_id AND l1.archived = 0
 JOIN lessons l2 ON l2.id = a2.lesson_id AND l2.archived = 0
+WHERE a1.kind IN ('symbol', 'file')
 GROUP BY a1.lesson_id, a2.lesson_id
 HAVING shared_anchors >= 1
 ORDER BY shared_anchors DESC;
 ```
+
+The `WHERE a1.kind IN ('symbol', 'file')` clause is load-bearing. `directory`
+and `import_pattern` anchors are deliberately coarse — two lessons about
+completely different concerns routinely share `src/db` or `sqlx::*` — so
+counting them turns "lives near" into a false duplication signal. Measured on
+the 2026-07-22 store: 7 genuine candidate pairs with the clause, 17 without.
 
 For each pair with shared anchors, read both lesson texts and judge: are they
 saying the same thing in different words? Present merge candidates:
