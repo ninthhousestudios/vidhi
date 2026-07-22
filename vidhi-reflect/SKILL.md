@@ -33,7 +33,7 @@ enforcement mechanism* for tier (c). Both are maintained by this skill.
 
 | Tier | Mechanism | When |
 |---|---|---|
-| (a) | **Per-project sutra constraint** — rules.toml delta, tend discipline | graph-expressible: dependency seams, `confined_external`, cycles |
+| (a) | **Per-project sutra constraint** — rules.toml delta, tend discipline | graph-expressible (dependency seams, `confined_external`, cycles), or pattern-expressible via `forbidden_pattern` from `vidhi/language-rules/<lang>.toml` — the only tier that fires at edit time |
 | (b) | **Sutra convention** — lifecycle to preferred/forbidden | code pattern FCA can detect |
 | (c) | **Lessons store** via `sutra_remember` — contextually surfaced by sutra tools | agent-behavioral, applies across projects |
 | (d) | **Project CLAUDE.md** | agent-behavioral, one project |
@@ -157,7 +157,7 @@ sutra_remember cite="<lesson_id>" source_tasks=["<task_id>"]
 
 ### 4. Lessons store maintenance
 
-Before routing new themes, maintain the existing store. These three passes run
+Before routing new themes, maintain the existing store. These four passes run
 every reflect invocation.
 
 #### 4.1 Prune decayed lessons
@@ -251,6 +251,40 @@ Merge operation (when user approves):
 Automated merge is too risky — two lessons anchored to the same file may be
 about completely different concerns. This pass always presents and waits.
 
+#### 4.4 Audit write-time reachability
+
+Every sutra surfacing point is a read operation, so a lesson anchored only to
+symbols and files can never reach an agent writing new code. This pass finds
+lessons stranded that way:
+
+```sql
+SELECT l.id, substr(l.text, 1, 120) AS txt, l.project_origin,
+       (SELECT group_concat(a.kind || ':' || a.value, '  ')
+          FROM anchors a WHERE a.lesson_id = l.id) AS anchors
+FROM lessons l
+WHERE l.archived = 0
+  AND NOT EXISTS (SELECT 1 FROM anchors a
+                   WHERE a.lesson_id = l.id
+                     AND a.kind IN ('directory', 'import_pattern'))
+ORDER BY l.created_at;
+```
+
+A hit is not automatically a defect. Ask per lesson: *would this matter to
+someone writing a file that doesn't exist yet?*
+
+- **No** — the lesson is genuinely about existing code ("when modifying
+  `Ephemeris::apply_sidereal`, watch the sidereal speed path"). Read-time
+  anchoring is correct. Leave it.
+- **Yes** — add a `directory` or `import_pattern` anchor per the tier (c)
+  guidance in step 5.
+
+Derive directory anchors from the lesson's existing `file` anchors, skipping
+any parent with fewer than two path components — a bare `src`/`lib` anchor
+fires on every file in the repo and buys noise, not reach.
+
+Report: "Reachability: N lessons read-time-only, K re-anchored, J confirmed
+read-time by design."
+
 ### 5. Route
 
 Assign each accepted theme a tier. Rules of the road:
@@ -258,6 +292,13 @@ Assign each accepted theme a tier. Rules of the road:
 - **Prefer the most mechanical tier that fits.** Enforced-by-guard beats
   detected-by-FCA beats remembered-by-agent. (c) is the fallback, not the
   default.
+- **Prefer write-time delivery over read-time recall.** A lesson only helps if
+  it surfaces while the work is happening. Every sutra surfacing point
+  (`sutra_read`, `sutra_impact`, `sutra_orient`) is a *read* operation, so a
+  (c) lesson anchored only to symbols is invisible to an agent writing new
+  code. Before settling on (c), ask whether the theme is pattern-expressible —
+  if it is, it belongs at (a) as a `forbidden_pattern`, which fires in the
+  editor and needs no agent to remember anything.
 - **(a)/(b) deltas go through the owning repo's governance** — append to its
   rules.toml with `provenance = "reflect:<ledger-row>"`, severity per
   vidhi-sutra-adopt classification (existing violations → advisory). If the
@@ -266,13 +307,23 @@ Assign each accepted theme a tier. Rules of the road:
   - `text`: imperative, 1-3 sentences, no war story — the story lives in the
     ledger row
   - `location_anchors`: symbols or files from the evidence tasks' `files`
-    fields or root_cause descriptions
+    fields or root_cause descriptions — then **check write-time reachability
+    before you settle**. Ask: *does this lesson apply to a file that doesn't
+    exist yet?* If yes, symbol and file anchors cannot reach it and the lesson
+    also needs one of:
+    - a `directory` anchor — for location-scoped lessons ("everything under
+      `migrations/` must be idempotent"). Scope it to a real subdirectory;
+      a bare `src`/`lib` fires repo-wide and is noise, not reach.
+    - an `import_pattern` anchor — for technology-scoped lessons that follow
+      the dependency rather than the location ("`sqlx::query_as` panics on an
+      empty result set"). These travel to new code the symbol anchors never see.
   - `source_tasks`: the yojana task IDs from the evidence column
   - `project_origin`: null for cross-project themes, project slug for
     single-project themes
   - `categories`: technology/concern tags (e.g., `["sqlite", "concurrency"]`)
-  - `workspace`: a workspace path for anchor enrichment (sutra auto-adds
-    import-pattern anchors, directory anchors, and language categories)
+  - `workspace`: **always pass it.** Sutra auto-adds import-pattern anchors,
+    directory anchors, and language categories from the workspace graph.
+    Omitting it is the main reason stored lessons end up read-time-only.
   - No cardinality cap — sutra's contextual surfacing replaces the broadcast.
     Anchor specificity and category filtering naturally limit what surfaces.
 - **Tier (e) playbooks** are the deep version: the mechanism, the discipline,
@@ -307,8 +358,9 @@ without nagging — a skipped backfill twice is closed, not re-asked.
 ### 7. Present the plan
 
 One table: theme · evidence (task ids) · tier · mechanism · draft text. Plus
-the capture-gap list, the maintenance report (pruned/stale/deduped), and any
-proposed tier (c) `sutra_remember` calls with their anchors and categories.
+the capture-gap list, the maintenance report (pruned/stale/deduped/
+reachability), and any proposed tier (c) `sutra_remember` calls with their
+anchors and categories.
 Ask the user to adjust routing before writing. Wait.
 
 ### 8. Write
@@ -345,9 +397,10 @@ Ask the user to adjust routing before writing. Wait.
 ### 9. Hand off
 
 Comment on the checkpoint task (or yojana/36-style tracking task for global
-passes): themes routed, gaps found, lessons maintained (pruned/flagged/deduped),
-next natural pass. If the same graph-expressible theme has now recurred across
-≥2 projects' rules.toml, file a sutra task proposing global rules support —
+passes): themes routed, gaps found, lessons maintained (pruned/flagged/deduped/
+re-anchored), next natural pass. If the same graph-expressible theme has now
+recurred across ≥2 projects' rules.toml, file a sutra task proposing global
+rules support —
 that's the evidence threshold for building enforcement infrastructure, not
 before.
 
