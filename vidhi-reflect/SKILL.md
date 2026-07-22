@@ -306,10 +306,27 @@ Assign each accepted theme a tier. Rules of the road:
   code. Before settling on (c), ask whether the theme is pattern-expressible —
   if it is, it belongs at (a) as a `forbidden_pattern`, which fires in the
   editor and needs no agent to remember anything.
+- **A `forbidden_pattern` rule is not routed until its query is validated.**
+  Tree-sitter queries fail silently in *both* directions, and neither failure
+  is visible from reading the query (aion/81, aion/82): a plausible-but-wrong
+  node name under-matches, so the rule reports green while real violations
+  sail through; a `(#eq? ...)` predicate left outside the wrapping parens
+  detaches into its own pattern and matches *everything*. Before writing a
+  rule into any rules.toml or language-rules catalog, run it against real
+  source on the pinned grammar version and confirm both directions — it
+  matches known-bad code, and it does *not* match known-good code. An
+  unvalidated (a) rule is worse than the (c) lesson it replaced, because it
+  reports a compliance it is not actually checking.
 - **(a)/(b) deltas go through the owning repo's governance** — append to its
   rules.toml with `provenance = "reflect:<ledger-row>"`, severity per
   vidhi-sutra-adopt classification (existing violations → advisory). If the
   repo is governed, this is a mini-tend; do not regenerate anything.
+- **Advisory is not enforcement.** A rule parked at `severity = "advisory"`
+  documents drift after the fact; it does not stop it (swe-dashboard/33, /37 —
+  the same constraint violated repeatedly while the flip to blocking stayed
+  deferred). When routing to (a), say explicitly when the severity flips to
+  blocking, or file it as (f). "Advisory for now" with no trigger is how a
+  constraint becomes decoration.
 - **Tier (c) goes to the lessons store** via `sutra_remember`:
   - `text`: imperative, 1-3 sentences, no war story — the story lives in the
     ledger row
