@@ -48,6 +48,14 @@ provenance = "CLAUDE.md coding_discipline"  # from rule.provenance_hint
 - `no-dynamic-type` — `dynamic` type annotation detection
 - `no-bang-null-assertion` — `!` null-assertion operator detection
 
+### Python (1 rule)
+- `no-new-returning-never` — `__new__` annotated `-> Never` in a `.pyi` stub
+
+Python rules are evaluated against `.py` **and** `.pyi`. Stubs are parsed for
+constraint matching only and never indexed, so stub-scoped rules do not skew
+symbol, fan-in or co-change rollups.
+
 ### Not yet enforceable (prose-only in coding_discipline)
 - Rust: Prefer Slices Over Containers, Avoid Premature Dynamic Allocation, Graph & Tree Semantics
 - Dart: Enforce Const Constructors, Cascade & Collection Operators
+- Python: stub/runtime namespace parity, `@final` on returned-only pyclasses

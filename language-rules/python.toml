@@ -1,0 +1,55 @@
+# Python forbidden_pattern rules catalog
+#
+# Skills (vidhi-sutra-seed, vidhi-sutra-adopt, vidhi-sutra-tend) read this
+# catalog and propose relevant rules during governance setup. Each [[rule]]
+# maps a recurring failure mode to an enforceable tree-sitter query.
+#
+# To adopt a rule into a project, the skill writes a [[constraint]] block
+# into the project's .sutra/rules.toml with kind="forbidden_pattern",
+# language="python", and the query/name/severity/scope from here.
+#
+# Queries are tree-sitter S-expressions validated against tree-sitter-python.
+# Sutra validates at parse_rules time — invalid queries become parse errors.
+#
+# Note: sutra evaluates python rules against both `.py` and `.pyi`. Stubs are
+# parsed for constraint matching only and never enter the symbol graph, so a
+# rule scoped at a stub directory works without skewing rollups (sutra/275).
+
+[[rule]]
+name = "no-new-returning-never"
+principle = "Non-constructible stubs must preserve class identity"
+query = '''
+(function_definition
+  name: (identifier) @_name (#eq? @_name "__new__")
+  return_type: (type (identifier) @_ret) (#eq? @_ret "Never")) @match
+'''
+recommended_severity = "blocking"
+scope_hint = "**/*.pyi"
+provenance_hint = "pyswisseph-rs/30"
+description = """
+Detects `def __new__(cls, ...) -> Never` in a type stub. Marking a pyclass \
+non-constructible by giving `__new__` a `Never` parameter is correct, but \
+annotating the *return* as `Never` makes mypy infer the class itself as \
+`Callable[[Never], Never]`, which silently breaks every class-attribute \
+access on it (e.g. `RefracDir.TRUE_TO_APP` stops resolving). The correct \
+form is `-> Self`: the `_: Never` parameter still blocks construction while \
+the return type preserves class identity."""
+false_positives = """
+A genuine factory that can never return — a `__new__` that always raises — is \
+correctly annotated `-> Never`. This is rare: it is almost always a mistyped \
+non-constructible marker. Waive with a rationale naming the raising path."""
+guidance = """
+Change the return annotation to `Self` (import from `typing` on 3.11+, \
+`typing_extensions` below that) and keep the `_: Never` positional-only \
+parameter. Verify with a negative mypy test that direct construction is still \
+rejected *and* that class attributes still resolve — the failure this rule \
+catches passes stubtest and only shows up in attribute access."""
+
+# --- Principles that remain prose-only ---
+#
+# Stub/runtime namespace parity (lib.rs m.add_class == __init__.py ==
+#   __init__.pyi __all__): cross-file set comparison, not a per-file pattern.
+#   Enforce with a CI script (see pyswisseph-rs test_namespace_mirror.py).
+#
+# @final on returned-only pyclasses: requires knowing which classes are
+#   constructed in Rust, which is not visible in the stub. Prose-only.
