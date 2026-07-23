@@ -41,9 +41,27 @@ A LONG, numbered list of user stories. Each user story should be in the format o
 
 This list of user stories should be extremely extensive and cover all aspects of the feature.
 
+## Invariants
+
+A numbered list of typed domain claims the implementation must preserve, each with an explicit epistemic status:
+
+- **firm** — settled; downstream work may rely on it
+- **provisional** — current best guess; may change, so don't build hard dependencies on it
+- **unspecified** — deliberately undecided; a free variable. Downstream agents must NOT invent a commitment here — ask, or leave it open.
+
+Format: `I<n> [status]: <claim>`
+
+<invariants-example>
+1. I1 [firm]: A snapshot is immutable after publish.
+2. I2 [provisional]: Retention is 90 days.
+3. I3 [unspecified]: Tenant isolation mechanism — RLS vs schema-per-tenant is not yet decided.
+</invariants-example>
+
+The point of `unspecified` entries is to distinguish "silent because obvious" from "silent because undecided" — list every deliberate non-decision here rather than leaving it implicit. Distinguish invariants from Out of Scope: an unspecified invariant WILL need an answer; out-of-scope items won't.
+
 ## Implementation Decisions
 
-A list of implementation decisions that were made. This can include:
+A list of implementation decisions that were made. Where a decision enacts an invariant, reference it by id (e.g. "per I1, ..."). This can include:
 
 - The modules that will be built/modified
 - The interfaces of those modules that will be modified
