@@ -40,9 +40,17 @@ provenance = "CLAUDE.md coding_discipline"  # from rule.provenance_hint
 
 ## Current coverage
 
-### Rust (2 rules)
+### Rust (6 rules)
 - `no-clone-driven-dev` — `.clone()` call detection
 - `no-to-owned-bypass` — `.to_owned()` call detection
+- `no-allow-attributes` — `#[allow]`/`#![allow]` lint-silencing detection (blocking; protects the workspace `[lints]` baseline)
+- `unsafe-requires-waiver` — `unsafe` blocks routed through waive-with-rationale
+- `no-todo-unimplemented` — `todo!()`/`unimplemented!()` leftovers
+- `no-unwrap` — `.unwrap()` calls (edit-time twin of `clippy::unwrap_used`)
+
+Rust queries may use multiple top-level patterns and `#match?` — sutra passes
+the source as the tree-sitter text provider, so text predicates (`#eq?`,
+`#match?`, `#any-of?`) are evaluated.
 
 ### Dart (2 rules)
 - `no-dynamic-type` — `dynamic` type annotation detection
@@ -56,6 +64,6 @@ constraint matching only and never indexed, so stub-scoped rules do not skew
 symbol, fan-in or co-change rollups.
 
 ### Not yet enforceable (prose-only in coding_discipline)
-- Rust: Prefer Slices Over Containers, Avoid Premature Dynamic Allocation, Graph & Tree Semantics
+- Rust: Prefer Slices Over Containers, Avoid Premature Dynamic Allocation, Graph & Tree Semantics, swallowed Results (`let _ =`, type-dependent — use `clippy::let_underscore_must_use` instead)
 - Dart: Enforce Const Constructors, Cascade & Collection Operators
 - Python: stub/runtime namespace parity, `@final` on returned-only pyclasses

@@ -53,6 +53,107 @@ If the function can accept a borrow (&str, &[T]) instead of requiring an owned \
 value, restructure the signature. If owned is genuinely needed (storing in a \
 struct, crossing an async boundary), waive with rationale."""
 
+[[rule]]
+name = "no-allow-attributes"
+principle = "Lint layer tamper-resistance"
+query = '''
+(attribute_item (attribute (identifier) @m (#eq? @m "allow"))) @match
+(inner_attribute_item (attribute (identifier) @m (#eq? @m "allow"))) @match
+'''
+recommended_severity = "blocking"
+scope_hint = "src/"
+provenance_hint = "workspace [lints.clippy] baseline"
+description = """
+Detects #[allow(...)] and #![allow(...)] attributes. Models under pressure to \
+get a clean build silence lints instead of fixing the underlying issue — this \
+is the escape hatch that makes every clippy/rustc lint optional. Blocking this \
+makes the workspace [lints] baseline tamper-resistant: the sanctioned paths are \
+fixing the code, #[expect(lint, reason = "...")], or an out-of-band waiver \
+with rationale."""
+false_positives = """
+Legitimate structural allows: clippy::too_many_arguments on adapter functions, \
+clippy::type_complexity on internal plumbing, #[allow(deprecated)] wrapping \
+intentional legacy interop, #[allow(dead_code)] on staged-but-unwired API \
+surface. Prefer #[expect] with a reason for these (it warns when unfulfilled); \
+waive only where #[expect] is unavailable. Adopting in a brownfield project: \
+existing allows will all flag — waive them in a batch or start advisory."""
+guidance = """
+First choice: fix the lint. Second: #[expect(lint, reason = "...")] (Rust \
+1.81+) so the suppression self-expires when the code changes. Last resort: \
+sutra_constraints action=waive with a rationale naming the specific lint and \
+why it cannot be fixed. Never blanket-allow at module or crate level."""
+
+[[rule]]
+name = "unsafe-requires-waiver"
+principle = "Unsafe blocks carry an audited safety argument"
+query = '(unsafe_block) @match'
+recommended_severity = "advisory"
+scope_hint = "src/"
+provenance_hint = "workspace [lints.clippy] baseline"
+description = """
+Detects unsafe blocks. The goal is not to forbid unsafe but to force each \
+block through the waiver flow, so every unsafe site has an out-of-band, \
+auditable safety rationale rather than a ritually pasted SAFETY comment. \
+Covers unsafe blocks only — unsafe fn bodies without an inner block are the \
+caller's obligation and stay visible in signatures."""
+false_positives = """
+FFI-heavy crates (bindings, -sys crates) where unsafe is the crate's purpose — \
+there, narrow the scope to the safe-wrapper modules or skip adoption; a rule \
+that fires on every function trains everyone to ignore it."""
+guidance = """
+For each unsafe block: state the invariant that makes it sound and why the \
+compiler cannot see it, then waive for the enclosing symbol with that \
+invariant as the rationale. If the invariant is hard to state, that is the \
+signal to restructure toward a safe abstraction instead."""
+
+[[rule]]
+name = "no-todo-unimplemented"
+principle = "No stubbed control flow in committed code"
+query = '(macro_invocation macro: (identifier) @m (#match? @m "^(todo|unimplemented)$")) @match'
+recommended_severity = "advisory"
+scope_hint = "src/"
+provenance_hint = "workspace [lints.clippy] baseline"
+description = """
+Detects todo!() and unimplemented!() invocations. Both panic at runtime; \
+models scaffold with them and then forget the hole, which turns a missing \
+feature into a production panic. Advisory rather than blocking so legitimate \
+mid-task scaffolding is not fought at edit time — review surfaces leftovers."""
+false_positives = """
+Deliberate scaffolding during active work (the whole point is that it is \
+temporary). Trait impls where a method is genuinely unreachable for a given \
+type — prefer unreachable!("why") there, which documents intent and is not \
+flagged."""
+guidance = """
+Implement the hole before closing the task, or return a proper \
+Err(Unsupported)-style variant if the operation is permanently unavailable. \
+If truly unreachable, switch to unreachable!() with a message stating the \
+invariant. Waivers should be rare and short-lived."""
+
+[[rule]]
+name = "no-unwrap"
+principle = "Panics carry invariant messages"
+query = '(call_expression function: (field_expression field: (field_identifier) @m (#eq? @m "unwrap"))) @match'
+recommended_severity = "advisory"
+scope_hint = "src/"
+provenance_hint = "workspace [lints.clippy] baseline"
+description = """
+Detects .unwrap() calls. Edit-time twin of clippy::unwrap_used (warn in the \
+workspace [lints] baseline): catching it before a cargo cycle saves an \
+iteration, and the guard fires even when the model skips running clippy. \
+Where a panic on violated invariant is genuinely correct, .expect("invariant: \
+...") documents why the failure is impossible; bare .unwrap() documents \
+nothing."""
+false_positives = """
+#[cfg(test)] modules under src/ (clippy's allow-unwrap-in-tests exempts these \
+but the tree-sitter query cannot see cfg), Mutex lock().unwrap() as the \
+standard poisoning idiom, and parses of compile-time-constant inputs. Waive \
+or scope test-heavy files; keep the rule quiet enough to stay credible."""
+guidance = """
+Recoverable failure: propagate with ? or match. Unrecoverable invariant: \
+.expect() with a message naming the invariant that would have to break. \
+Neither: restructure so the fallible step happens where the caller can \
+decide. Waive with rationale for the poisoning idiom and test modules."""
+
 # --- Principles that remain prose-only ---
 #
 # Prefer Slices Over Containers: detecting fn(s: String) vs fn(s: &str) is
@@ -65,3 +166,7 @@ struct, crossing an async boundary), waive with rationale."""
 #
 # Graph & Tree Semantics: too context-dependent for structural pattern
 #   matching. Stays prose-only.
+#
+# Swallowed Results (let _ = fallible()): tree-sitter cannot see types, so
+#   every discarded non-Result value would false-positive. Covered better by
+#   clippy::let_underscore_must_use (pedantic) in the workspace lints baseline.
