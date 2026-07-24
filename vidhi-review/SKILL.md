@@ -84,6 +84,7 @@ Pull the minimum project context a cold reviewer needs:
 - `CONTEXT.md` — domain vocabulary (if it exists)
 - Relevant ADRs — any ADR referenced in the task or touching the same area as the diff
 - Key type signatures — for functions/types the diff modifies, include their doc comments and public interface
+- Language standards baseline — for Rust diffs, load `vidhi-rust/SKILL.md` as the review baseline (and `exemplars.md` when a finding needs a canonical counter-shape)
 
 Don't pull the entire project README or CLAUDE.md. The reviewer doesn't need project setup instructions — they need domain contracts and design decisions.
 

@@ -35,6 +35,8 @@ This is an on-demand gate — Josh decides when to run it. When a task looks lik
 
 ## Skeleton checklist
 
+The design-time projection of `vidhi-rust` — consult that skill (and its exemplars) when a checklist line needs the full standard or a canonical example.
+
 Rust:
 - No owned params where a slice serves (`String` → `&str`, `Vec<T>` → `&[T]`)
 - No `clone()` implied by the design — sharing is `&`/lifetimes, or a stated `Arc` reason

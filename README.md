@@ -40,6 +40,7 @@ Provenance exceptions (matters when syncing upstream updates): `vidhi-brainstorm
 |---|---|
 | `vidhi-implement` | Yojana-aware dispatcher — pulls task, follows plan if present, selects method, reports back |
 | `vidhi-tdd` | Red-green loop — reference material (standalone or called by vidhi-implement; refactoring lives in review) |
+| `vidhi-rust` | Rust standards baseline — errors, ownership, type design, dispatch; house exemplars (review baseline, subagent briefings) |
 | `vidhi-diagnose` | Bug investigation — hypothesize, isolate, confirm |
 | `vidhi-deepen` | Refactoring and structural improvement |
 
