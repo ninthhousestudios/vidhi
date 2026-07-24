@@ -44,6 +44,8 @@ If you find a conflict or dependency issue, comment on the task and flag it to t
 
 ### 4. Write the plan
 
+**Types-first gate (Rust/Dart).** If the task creates a non-trivial new unit — a module or subsystem with a real data model — suggest `vidhi-types-first` in one line before writing the plan. Its approved type skeleton becomes this plan's code sketches: signatures land in the Steps section already reviewed, and implementation codes against a contract instead of a guess. Josh decides; don't start it unbidden.
+
 Structure:
 
 ```markdown
