@@ -24,6 +24,7 @@ Provenance exceptions (matters when syncing upstream updates): `vidhi-brainstorm
 |---|---|
 | `vidhi-brainstorm` | Collaborative design exploration — structured dialogue to turn ideas into designs |
 | `vidhi-prd` | Synthesize conversation context into a PRD (user stories, modules, test strategy) |
+| `vidhi-types-first` | Types-first gate for Rust/Dart — type skeleton (signatures, error taxonomy, no bodies) reviewed before implementation |
 
 ### Planning
 
