@@ -50,11 +50,43 @@ Use null-coalescing (?? with a default), conditional access (?.), or explicit \
 null checks (if (x != null)). If the value is structurally guaranteed non-null, \
 consider late or a redesign that eliminates the nullable type."""
 
-# --- Principles that remain prose-only ---
+[[rule]]
+name = "no-ignore-comments"
+principle = "Lint layer tamper-resistance"
+query = '((comment) @match (#match? @match "^//+ *ignore(_for_file)?:"))'
+recommended_severity = "blocking"
+scope_hint = "lib/"
+provenance_hint = "house analysis_options.yaml baseline"
+description = """
+Detects `// ignore:` and `// ignore_for_file:` comments — the analyzer's lint \
+escape hatch. Models under pressure to get a clean `dart analyze` silence \
+lints instead of fixing the underlying issue; these comments make every \
+analyzer diagnostic optional. Blocking them makes the shared \
+analysis_options.yaml baseline tamper-resistant: the sanctioned paths are \
+fixing the code or an out-of-band waiver with rationale. Validated against \
+tree-sitter-dart on a real workspace 2026-07 (`(comment)` matches `//` line \
+comments; doc comments are a separate node)."""
+false_positives = """
+Generated code (*.g.dart, *.freezed.dart) carries `// ignore_for_file:` \
+headers by design — but it is emitted by build_runner, not hand-edited, so it \
+rarely crosses the edit-time guard; batch-waive if it flags. The analyzer \
+baseline excludes generated globs for the same reason. Adopting in a \
+brownfield project: existing hand-written ignores will all flag — waive in a \
+batch or start advisory."""
+guidance = """
+First choice: fix the diagnostic. Unlike Rust there is no #[expect] analog — \
+the analyzer offers no self-expiring suppression — so the only sanctioned \
+suppression is sutra_constraints action=waive with a rationale naming the \
+specific lint and why it cannot be fixed. Never `// ignore_for_file:` a \
+hand-written file."""
+
+# --- Principles covered elsewhere ---
 #
-# Enforce Const Constructors: detecting missing `const` on constructor calls
-#   is possible but very noisy — not every constructor call benefits from const.
-#   Could add a scoped rule for specific widget trees later.
+# Enforce Const Constructors: not a sutra rule (missing-const detection is
+#   possible but very noisy) — enforced by the shared analysis_options.yaml
+#   baseline via prefer_const_constructors and friends (see vidhi-dart/).
 #
-# Cascade & Collection Operators: would require required_pattern (absence
-#   detection), which is explicitly deferred in sutra's design. Stays prose-only.
+# Cascade & Collection Operators: absence detection would require
+#   required_pattern, explicitly deferred in sutra's design — enforced by the
+#   analyzer baseline via cascade_invocations, prefer_spread_collections,
+#   prefer_if_elements_to_conditional_expressions.

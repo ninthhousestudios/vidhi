@@ -52,9 +52,16 @@ Rust queries may use multiple top-level patterns and `#match?` — sutra passes
 the source as the tree-sitter text provider, so text predicates (`#eq?`,
 `#match?`, `#any-of?`) are evaluated.
 
-### Dart (2 rules)
+### Dart (3 rules)
 - `no-dynamic-type` — `dynamic` type annotation detection
 - `no-bang-null-assertion` — `!` null-assertion operator detection
+- `no-ignore-comments` — `// ignore:` / `// ignore_for_file:` detection (blocking; protects the shared analysis_options.yaml baseline — see `vidhi-dart/`)
+
+`no-ignore-comments` is validated against live workspaces (explore, arjuna,
+swe_dashboard, swisseph.rs.dart, 2026-07): `(comment)` matches `//` line
+comments and text predicates evaluate. Generated code (freezed, protobuf)
+carries ignore headers by design — batch-waive it; sutra waivers are
+exact-file-path matches (globs are accepted but never match).
 
 ### Python (1 rule)
 - `no-new-returning-never` — `__new__` annotated `-> Never` in a `.pyi` stub
@@ -65,5 +72,5 @@ symbol, fan-in or co-change rollups.
 
 ### Not yet enforceable (prose-only in coding_discipline)
 - Rust: Prefer Slices Over Containers, Avoid Premature Dynamic Allocation, Graph & Tree Semantics, swallowed Results (`let _ =`, type-dependent — use `clippy::let_underscore_must_use` instead)
-- Dart: Enforce Const Constructors, Cascade & Collection Operators
+- Dart: Enforce Const Constructors and Cascade & Collection Operators are not sutra rules but are analyzer-enforced by the shared analysis_options.yaml baseline (`prefer_const_*`, `cascade_invocations`, collection-operator lints — see `vidhi-dart/`)
 - Python: stub/runtime namespace parity, `@final` on returned-only pyclasses

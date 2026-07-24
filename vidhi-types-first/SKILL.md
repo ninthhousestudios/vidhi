@@ -35,7 +35,7 @@ This is an on-demand gate — Josh decides when to run it. When a task looks lik
 
 ## Skeleton checklist
 
-The design-time projection of `vidhi-rust` — consult that skill (and its exemplars) when a checklist line needs the full standard or a canonical example.
+The design-time projection of the language standards skill (`vidhi-rust` for Rust, `vidhi-dart` for Dart/Flutter) — consult it (and its exemplars) when a checklist line needs the full standard or a canonical example.
 
 Rust:
 - No owned params where a slice serves (`String` → `&str`, `Vec<T>` → `&[T]`)
