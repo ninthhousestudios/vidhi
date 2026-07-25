@@ -333,12 +333,58 @@ Only suggest this — don't write it without explicit approval, since it changes
 | `max_fan_in` | `target` (file path), `threshold` | advisory | Alert when a file exceeds N importers |
 | `forbidden_external` | `crates` (name globs); optional `from` (path glob, default `**`), `include_dev` | blocking | Forbid external crates/packages within a scope. Checked from import paths AND Cargo.toml `[dependencies]` |
 | `confined_external` | `crates`, `allowed_in` (path globs; `[]` = banned everywhere); optional `include_dev` | blocking | External crates importable ONLY from listed paths (single-point-of-contact rules) |
-| `forbidden_pattern` | `language`, `query` (tree-sitter S-expression); optional `scope` | advisory | AST-pattern enforcement — coding discipline rules. Guard uses introduced-only semantics (pre-existing matches grandfathered). See `vidhi/language-rules/` catalog for vetted rules per language |
+| `forbidden_pattern` | `language`, `query` (tree-sitter S-expression); optional `scope`, `include_tests` | advisory | AST-pattern enforcement — coding discipline rules. Guard uses introduced-only semantics (pre-existing matches grandfathered). See `vidhi/language-rules/` catalog for vetted rules per language |
 
 Note: in a multi-crate Cargo workspace, sibling-crate imports resolve to real
 edges (since sutra/needs-designing/15), so crate-to-crate seams use
 `forbidden_dep`/`boundary`. Naming a workspace member in an external kind's
 `crates` is a hard error.
+
+### Test code is excluded by default
+
+Every constraint kind skips test-only code unless it opts in. For Rust that
+means anything under a `#[cfg(test)]` item or a `#[test]`/`#[tokio::test]`
+function — the attribute line through the end of the item it annotates:
+
+- `forbidden_pattern`: matches inside those ranges are dropped.
+- `no_cycles` and `forbidden_dep`/`boundary`: `use` statements inside those
+  ranges do not create graph edges, so a cycle or violation that exists only in
+  test wiring is not reported.
+
+This is the same call clippy makes with `allow-unwrap-in-tests`. Without it a
+rule like `no-unwrap` is unusable in idiomatic Rust: on yojana it produced 413
+matches, every one of them in an inline test module, burying the production
+signal completely.
+
+Opt back in per constraint when the rule genuinely should govern test code —
+say, banning a deprecated test helper:
+
+```toml
+[[constraint]]
+kind = "forbidden_pattern"
+language = "rust"
+query = '(call_expression function: (identifier) @f (#eq? @f "legacy_fixture")) @match'
+name = "no-legacy-fixture"
+include_tests = true
+```
+
+`include_tests` is not part of constraint identity, so toggling it keeps
+existing waivers and ratchet registrations attached.
+
+Two limits worth knowing:
+
+- **`cfg` predicates are read conservatively.** `#[cfg(test)]` and
+  `#[cfg(all(test, ...))]` count as test scope; `#[cfg(not(test))]` and
+  anything naming a string (`#[cfg(feature = "test-helpers")]`) stay
+  production. When in doubt sutra treats code as production — it would rather
+  report a match you dismiss than hide one.
+- **Rust integration tests (`tests/*.rs`) are not detected**, since they carry
+  no `cfg(test)` attribute. Scope rules to `src/` (as the `vidhi` catalog does)
+  or waive per file.
+
+Edge-based kinds read the flag from the index, so a workspace indexed before
+this landed keeps the old behaviour until it is reparsed. Pattern kinds parse
+from disk and take effect immediately.
 
 ## Reference: convention lifecycle
 
