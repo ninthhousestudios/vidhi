@@ -373,18 +373,20 @@ existing waivers and ratchet registrations attached.
 
 Two limits worth knowing:
 
-- **`cfg` predicates are read conservatively.** `#[cfg(test)]` and
-  `#[cfg(all(test, ...))]` count as test scope; `#[cfg(not(test))]` and
-  anything naming a string (`#[cfg(feature = "test-helpers")]`) stay
-  production. When in doubt sutra treats code as production — it would rather
-  report a match you dismiss than hide one.
+- **`cfg` predicates are read conservatively.** The test is whether the
+  predicate holds *only* in a test build. `#[cfg(test)]` and
+  `#[cfg(all(test, ...))]` count as test scope. `#[cfg(any(test, ...))]`,
+  `#[cfg(not(test))]`, `#[cfg(feature = "test-helpers")]` and
+  `#[cfg_attr(test, ...)]` all stay production — `cfg_attr` gates a nested
+  attribute, not the item. When in doubt sutra treats code as production — it
+  would rather report a match you dismiss than hide one.
 - **Rust integration tests (`tests/*.rs`) are not detected**, since they carry
   no `cfg(test)` attribute. Scope rules to `src/` (as the `vidhi` catalog does)
   or waive per file.
 
-Edge-based kinds read the flag from the index, so a workspace indexed before
-this landed keeps the old behaviour until it is reparsed. Pattern kinds parse
-from disk and take effect immediately.
+Edge-based kinds read the flag from the index. Upgrading invalidates Rust files
+so the next parse repopulates it; until that parse runs, edge kinds keep the old
+behaviour. Pattern kinds parse from disk and take effect immediately.
 
 ## Reference: convention lifecycle
 
