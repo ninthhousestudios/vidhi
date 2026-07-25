@@ -350,6 +350,9 @@ function — the attribute line through the end of the item it annotates:
 - `no_cycles` and `forbidden_dep`/`boundary`: `use` statements inside those
   ranges do not create graph edges, so a cycle or violation that exists only in
   test wiring is not reported.
+- `forbidden_external`/`confined_external`: a crate imported only from test
+  scope is not a production dependency and does not violate. A crate named in
+  `[dev-dependencies]` is a separate axis — that is `include_dev`.
 
 This is the same call clippy makes with `allow-unwrap-in-tests`. Without it a
 rule like `no-unwrap` is unusable in idiomatic Rust: on yojana it produced 413
