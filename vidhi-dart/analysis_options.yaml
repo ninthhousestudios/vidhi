@@ -57,6 +57,24 @@ linter:
     - prefer_final_locals
     - prefer_final_in_for_each
     # Cascade & collection operators (coding_discipline)
+    #
+    # cascade_invocations: turn this OFF in test/ via a nested
+    # test/analysis_options.yaml (`include: ../analysis_options.yaml` plus
+    # `cascade_invocations: false`). Reviewed against ~117 real sites across
+    # four repos @ swe-dashboard/93 and KEPT for lib/ — most of what it produces
+    # there is an improvement, and where the output is ugly it is usually
+    # pointing at code that wants restructuring rather than restyling.
+    #
+    # Tests are the exception on merit, not frequency (it splits about evenly
+    # between lib and test): a test is arrange/act/assert, so a repeated
+    # receiver is structure rather than duplication, and a call that throws
+    # inside a cascade is attributed to the declaration line — the wrong answer
+    # exactly when you are reading a test failure. The shape that makes this
+    # obvious, from swisseph.rs.dart:
+    #
+    #   final eph = Ephemeris(config);
+    #   eph.close();
+    #   eph.close();          // the sequence IS the assertion
     - cascade_invocations
     - prefer_spread_collections
     - prefer_if_elements_to_conditional_expressions
