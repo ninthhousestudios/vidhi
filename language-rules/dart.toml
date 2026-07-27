@@ -80,6 +80,42 @@ suppression is sutra_constraints action=waive with a rationale naming the \
 specific lint and why it cannot be fixed. Never `// ignore_for_file:` a \
 hand-written file."""
 
+[[rule]]
+name = "no-silent-empty-catch"
+principle = "Errors are handled or surfaced, never swallowed"
+query = '((try_statement (catch_clause) . (block) @match) (#match? @match "^\\{\\s*\\}$"))'
+recommended_severity = "blocking"
+scope_hint = "lib/"
+provenance_hint = "swe-dashboard/93 — gap left by the analyzer"
+description = """
+Detects catch blocks with an empty body — an error caught and then dropped on \
+the floor, with no fallback, no surfaced message and no log. The failure becomes \
+invisible: one such site was found silently rendering a wrong weekday.
+
+This exists because the analyzer CANNOT see these. `empty_catches` (in \
+lints/recommended) exempts `catch (_) {}`, and the underscore form is exactly \
+what people write, so the rule that nominally covers this misses it in practice. \
+Verified 2026-07-27 against tree-sitter-dart 0.2.0 on a real workspace.
+
+Grammar note: the catch body is a SIBLING of `catch_clause` under \
+`try_statement`, not a child — `catch_clause` carries only `exception` and \
+`stack_trace` fields. A `(catch_clause body: (block))` pattern is rejected by \
+tree-sitter as impossible; the `.` sibling anchor is required."""
+false_positives = """
+Genuinely optional work where the caller cannot act on failure — a best-effort \
+cache warm, a platform-availability probe in a test. These are real, which is \
+why the predicate lets a comment through: `catch (_) { /* why */ }` does NOT \
+match, mirroring empty_catches' own escape hatch. The rule asks for a sentence, \
+not a redesign.
+
+Brownfield adoption is cheap: sutra-guard fires on NEWLY introduced matches, so \
+existing sites do not tax every edit to the files that hold them."""
+guidance = """
+Pick one: surface the error the way sibling code does (an error string on the \
+result, a log), fall back to a defined value, or — if silence really is correct \
+— write the comment saying why. Do not reach for a waiver first; the comment is \
+the sanctioned escape and it is one line."""
+
 # --- Principles covered elsewhere ---
 #
 # Enforce Const Constructors: not a sutra rule (missing-const detection is
