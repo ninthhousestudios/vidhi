@@ -32,18 +32,30 @@ scope_hint = "src/"
 provenance_hint = "CLAUDE.md coding_discipline"
 description = """
 Detects .clone() method calls. Clone is often used reflexively to silence \
-borrow checker errors rather than designing proper reference structures. \
-Advisory by default because legitimate uses exist (Arc sharing, cheap Copy \
-types, API-required owned values)."""
+borrow checker errors rather than designing proper reference structures. The \
+query matches method form only; the qualified associated-function form \
+Arc::clone(&x)/Rc::clone(&x) is deliberately NOT matched. Paired with clippy's \
+clone_on_ref_ptr (which forces every cheap ref-ptr bump into that qualified \
+form), the partition is clean: clippy claims the allowed refcount clones, this \
+rule sees only genuine value clones. Advisory by default because some value \
+clones are legitimate (cheap Copy types, API-required owned values)."""
 false_positives = """
-Arc<str>/Arc<T> shared ownership, Copy types (small integers, enum variants), \
-API boundaries that require owned values, test fixtures. Waive with a rationale \
-naming the specific reason (e.g. "Arc<str> shared ownership")."""
+Copy types (small integers, enum variants) and API boundaries that require \
+owned values. NOT a false positive any more: Arc/Rc handle sharing — under the \
+clone_on_ref_ptr house rule those are written Arc::clone(&x) and this query \
+never sees them, so a match here is a real value clone. If a ref-ptr clone \
+still appears in method form, fix it to the qualified form rather than waiving. \
+Waive only a genuine value clone that is owned-required, with a rationale \
+naming why (e.g. "owned value stored in struct field")."""
 guidance = """
-If the clone is genuinely idiomatic (shared ownership, cheap copy, API requires \
-owned), waive for the enclosing symbol via sutra_constraints action=waive with \
-a rationale. Otherwise restructure: use references (&, &mut), explicit lifetimes, \
-or redesign data flow to avoid the copy."""
+First check the clone is not a ref-ptr bump in disguise: if it is Arc/Rc/Weak, \
+rewrite to Arc::clone(&x) (clippy clone_on_ref_ptr enforces this) and the \
+finding disappears. For a genuine value clone: restructure to use references \
+(&, &mut), explicit lifetimes, or a redesigned data flow. Only when the owned \
+value is genuinely required (stored in a struct, crossing an async boundary) \
+waive for the enclosing symbol via sutra_constraints action=waive with a \
+rationale. Prefer an instance-scoped waiver over a file/symbol waiver so the \
+scope is not blinded to future clones (sutra/305)."""
 
 [[rule]]
 name = "no-to-owned-bypass"

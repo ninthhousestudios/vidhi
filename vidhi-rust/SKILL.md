@@ -20,6 +20,7 @@ Reference: [references/errors.md](references/errors.md)
 
 - Read-only parameters take slices (`&str`, `&[T]`); owned parameters only where the callee stores. Never force the caller to allocate to pass an argument. [prose]
 - `clone()` is a decision, not a fix. Legitimate: `Arc` handle sharing, cheap `Copy`, an API that requires owned. Never: appeasing the borrow checker. [rule: no-clone-driven-dev, no-to-owned-bypass]
+- Ref-ptr handle bumps are written in qualified form — `Arc::clone(&x)`, `Rc::clone(&x)`, never `x.clone()`. This keeps the cheap refcount clone visually distinct from a value clone, so every `.clone()` the reader (and the sutra rule) sees is a real value copy. [clippy `clone_on_ref_ptr`]
 - Shared immutable strings are `Arc<str>`, not cloned `String`s (see `Constraint.id` in the exemplars).
 - Bundle related borrows into a lifetime-carrying view struct (`ParseContext<'a>`) instead of parameter sprawl or defensive copies.
 
@@ -48,7 +49,7 @@ Reference: [references/pointers.md](references/pointers.md)
 
 ## Lints and suppression
 
-- The workspace `[lints.clippy]` baseline (`unwrap_used`, `dbg_macro`, `todo`, `unimplemented`, `indexing_slicing`, all warn; tests exempted via `clippy.toml`) is the floor. Run `cargo clippy` before claiming done — plain `cargo build` does not evaluate these.
+- The workspace `[lints.clippy]` baseline (`unwrap_used`, `dbg_macro`, `todo`, `unimplemented`, `indexing_slicing`, `clone_on_ref_ptr`, all warn; tests exempted via `clippy.toml`) is the floor. Run `cargo clippy` before claiming done — plain `cargo build` does not evaluate these.
 - Never add `#[allow(...)]` to quiet a lint: fix it, use `#[expect(lint, reason = "...")]`, or waive via sutra with rationale. [rule: no-allow-attributes]
 - Every `unsafe` block states the invariant that makes it sound as its sutra waiver rationale. If the invariant is hard to state, restructure toward a safe abstraction instead. [rule: unsafe-requires-waiver]
 
