@@ -10,6 +10,18 @@
 #
 # Queries are tree-sitter S-expressions validated against tree-sitter-rust.
 # Sutra validates at parse_rules time — invalid queries become parse errors.
+#
+# Duplicate-rule principle
+# ------------------------
+# A forbidden_pattern rule that duplicates a lint already in the project's
+# [lints] baseline must be set to `blocking`, or it should not exist. At any
+# advisory/warn severity the two merely restate each other — same content,
+# same teeth — and the guard contributes nothing but a second voice. The one
+# thing the guard does that a lint structurally cannot is intercept at edit
+# time, before the code exists; a duplicate rule earns its place only by being
+# blocking and buying that intercept. Rules below that duplicate a clippy lint
+# name it explicitly in their description so this check is visible when a
+# project weighs adoption.
 
 [[rule]]
 name = "no-clone-driven-dev"
@@ -110,14 +122,17 @@ signal to restructure toward a safe abstraction instead."""
 name = "no-todo-unimplemented"
 principle = "No stubbed control flow in committed code"
 query = '(macro_invocation macro: (identifier) @m (#match? @m "^(todo|unimplemented)$")) @match'
-recommended_severity = "advisory"
+recommended_severity = "blocking"
 scope_hint = "src/"
 provenance_hint = "workspace [lints.clippy] baseline"
 description = """
-Detects todo!() and unimplemented!() invocations. Both panic at runtime; \
-models scaffold with them and then forget the hole, which turns a missing \
-feature into a production panic. Advisory rather than blocking so legitimate \
-mid-task scaffolding is not fought at edit time — review surfaces leftovers."""
+Detects todo!() and unimplemented!() invocations — the edit-time twin of \
+clippy::todo and clippy::unimplemented (warn in the workspace [lints] \
+baseline). Both panic at runtime; models scaffold with them and then forget \
+the hole, which turns a missing feature into a production panic. Blocking \
+per the duplicate-rule principle: the guard stops the write before the hole \
+can land in a commit, which is the intercept warn-level clippy cannot give. \
+Active scaffolding is waived, not silently tolerated."""
 false_positives = """
 Deliberate scaffolding during active work (the whole point is that it is \
 temporary). Trait impls where a method is genuinely unreachable for a given \
@@ -133,7 +148,7 @@ invariant. Waivers should be rare and short-lived."""
 name = "no-unwrap"
 principle = "Panics carry invariant messages"
 query = '(call_expression function: (field_expression field: (field_identifier) @m (#eq? @m "unwrap"))) @match'
-recommended_severity = "advisory"
+recommended_severity = "blocking"
 scope_hint = "src/"
 provenance_hint = "workspace [lints.clippy] baseline"
 description = """
@@ -144,15 +159,18 @@ Where a panic on violated invariant is genuinely correct, .expect("invariant: \
 ...") documents why the failure is impossible; bare .unwrap() documents \
 nothing."""
 false_positives = """
-#[cfg(test)] modules under src/ (clippy's allow-unwrap-in-tests exempts these \
-but the tree-sitter query cannot see cfg), Mutex lock().unwrap() as the \
-standard poisoning idiom, and parses of compile-time-constant inputs. Waive \
-or scope test-heavy files; keep the rule quiet enough to stay credible."""
+Mutex lock().unwrap() as the standard poisoning idiom, and parses of \
+compile-time-constant inputs. #[cfg(test)] modules are excluded automatically: \
+the guard skips test-scoped ranges before severity is consulted (sutra/290), \
+so unwraps in tests that share a file with the code they exercise do not fire \
+and need neither waiving nor file scoping. Waive the poisoning idiom with a \
+rationale."""
 guidance = """
 Recoverable failure: propagate with ? or match. Unrecoverable invariant: \
 .expect() with a message naming the invariant that would have to break. \
 Neither: restructure so the fallible step happens where the caller can \
-decide. Waive with rationale for the poisoning idiom and test modules."""
+decide. Waive with rationale for the poisoning idiom; test modules are \
+excluded automatically and need no waiver."""
 
 # --- Principles that remain prose-only ---
 #
