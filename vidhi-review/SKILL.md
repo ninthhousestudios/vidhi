@@ -177,7 +177,11 @@ When the external review comes back, reconcile findings with any inline review a
 
 opencode runs headlessly via `opencode run` and consumes the brief directory natively — its `read` tool works autonomously (no `--auto`, so the review stays read-only and safe). The brief *is* the contract; opencode is just another consumer of it.
 
-**First, build the brief** exactly as in step 8. Then invoke opencode against it.
+**The brief must live inside the repo, at a gitignored path.** opencode sandboxes its `read` tool to the run directory (`--dir <repo>`) — it cannot read paths outside the repo, so a `/tmp` brief is invisible to it (verified live: a `/tmp` brief failed; a brief inside the repo worked). Any gitignored in-repo directory works — pick one that already exists in the repo's `.gitignore`, or create one. In a Rust repo `target/review-brief-<project>-<date>/` is convenient since `target/` is already gitignored, but there's nothing special about `target/`; the only requirements are in-repo (so opencode can read it) and gitignored (so it doesn't dirty the tree). This overrides step 8's `/tmp` location for the opencode path only.
+
+Note the distinction: the **brief** is read by opencode, so it must be in-repo; the **prompt file** is `cat`'d by *your* shell (not opencode) before launch, so it can stay in `/tmp/claude-.../scratchpad/`.
+
+**First, build the brief** exactly as in step 8, but at the in-repo path above. Then invoke opencode against it.
 
 **Model.** Default `opencode/glm-5.2` (cross-vendor second opinion, distinct from Claude and Codex). The `opencode/` prefix routes to opencode zen (uses zen credits). Override with `--model` — good alternatives: `opencode/gpt-5.3-codex` (codex-tuned), `opencode/claude-opus-5`, `opencode/gemini-3.1-pro`. List with `opencode models`.
 
@@ -186,10 +190,11 @@ opencode runs headlessly via `opencode run` and consumes the brief directory nat
 The prompt points opencode at the brief and tells it to read `00-instructions.md` first:
 
 ```bash
-# 1. Write the prompt with the Write tool (not a heredoc) to a scratch path:
+# 1. Write the prompt with the Write tool (not a heredoc) to a scratch path
+#    (in /tmp — this file is cat'd by your shell, not read by opencode):
 #    /tmp/claude-.../scratchpad/opencode-prompt-<task>.txt
-#    Contents, roughly:
-#      Review the change described in the brief at <brief-dir>.
+#    Contents, roughly (use the in-repo brief path, relative to --dir):
+#      Review the change described in the brief at target/review-brief-<project>-<date>/.
 #      Read 00-instructions.md first, then use 10-tasks.md, 20-diff.patch,
 #      30-review.md, and 40-context/. Output findings in the YAML schema
 #      the instructions specify. Do not modify any files.
