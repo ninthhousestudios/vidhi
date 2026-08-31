@@ -95,6 +95,7 @@ The `--reviewer` flag (or user intent) picks the dispatch path:
 - **`claude`** (default) — inline review in this session. Proceed to step 6.
 - **`codex`** — dispatch to Codex via its companion script. Proceed to step 7.
 - **`brief`** — produce a self-contained review directory for any model. Proceed to step 8.
+- **`opencode`** — build the brief, then dispatch it to an opencode model headlessly. Proceed to step 9.
 
 If the user mentions codex, opencode, gemini, or another model by name, that's the reviewer. If they say "get a second opinion" without specifying, ask.
 
@@ -171,6 +172,43 @@ The brief is self-contained. An external model reads `00-instructions.md` first,
 Tell the user the brief location. They feed it to whatever model they want — opencode, gemini-cli, or a future tool. The skill doesn't need to know the invocation syntax for every model; that's the user's concern. The brief is the contract.
 
 When the external review comes back, reconcile findings with any inline review and update yojana.
+
+### 9. opencode dispatch
+
+opencode runs headlessly via `opencode run` and consumes the brief directory natively — its `read` tool works autonomously (no `--auto`, so the review stays read-only and safe). The brief *is* the contract; opencode is just another consumer of it.
+
+**First, build the brief** exactly as in step 8. Then invoke opencode against it.
+
+**Model.** Default `opencode/glm-5.2` (cross-vendor second opinion, distinct from Claude and Codex). The `opencode/` prefix routes to opencode zen (uses zen credits). Override with `--model` — good alternatives: `opencode/gpt-5.3-codex` (codex-tuned), `opencode/claude-opus-5`, `opencode/gemini-3.1-pro`. List with `opencode models`.
+
+**Write the prompt to a file first, then pass it via `"$(cat file)"`** — same hazard as the codex path. Focus/instruction text routinely contains backticks around identifiers and apostrophes; inlined into a double-quoted bash string, backticks become command substitution and silently mangle the prompt. `"$(cat file)"` inserts the content literally without re-scanning it.
+
+The prompt points opencode at the brief and tells it to read `00-instructions.md` first:
+
+```bash
+# 1. Write the prompt with the Write tool (not a heredoc) to a scratch path:
+#    /tmp/claude-.../scratchpad/opencode-prompt-<task>.txt
+#    Contents, roughly:
+#      Review the change described in the brief at <brief-dir>.
+#      Read 00-instructions.md first, then use 10-tasks.md, 20-diff.patch,
+#      30-review.md, and 40-context/. Output findings in the YAML schema
+#      the instructions specify. Do not modify any files.
+#
+# 2. Then, in ONE bash call with run_in_background + timeout both set:
+opencode run --dir <repo> -m opencode/glm-5.2 --variant high \
+  "$(cat /tmp/claude-.../scratchpad/opencode-prompt-<task>.txt)" \
+  > /tmp/claude-.../scratchpad/opencode-out-<task>.log 2>&1
+```
+
+**Important:** Set `run_in_background: true` and an explicit `timeout` of at least 600000 (10 minutes) **in the same Bash call that launches opencode** — a real review reads several files and runs past the Bash tool's 2-minute default, which would kill the work. Redirect stdout/stderr to the log file (as above); don't rely on the tool call's direct return.
+
+Default output format prints just the final review text — capture the log. (Pass `--format json` instead if you want machine-parseable line-delimited events: `type=="text"` parts carry the review, the closing `step_finish` event carries `tokens` and `cost`.)
+
+Parse the output into the standard finding schema where possible, and record the raw output as a yojana comment on the task:
+
+```
+yojana_task action=comment id="<id>" text="opencode (glm-5.2) review:\n<output>" author="opencode"
+```
 
 ## Finding schema
 
